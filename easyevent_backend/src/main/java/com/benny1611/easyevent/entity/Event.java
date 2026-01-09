@@ -1,9 +1,7 @@
-package com.benny1611.easyevent.dao;
+package com.benny1611.easyevent.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "events")
