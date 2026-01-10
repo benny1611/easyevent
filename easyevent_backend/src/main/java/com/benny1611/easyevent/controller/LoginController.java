@@ -3,8 +3,11 @@ package com.benny1611.easyevent.controller;
 import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.dto.JwtResponse;
 import com.benny1611.easyevent.dto.LoginRequest;
+import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -43,9 +48,15 @@ public class LoginController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String token = jwtUtils.generateToken(authentication.getName(), userRepository);
+            Optional<User> userOptional = userRepository.findByEmailWithRoles(request.getEmail());
+            String token;
+            if (userOptional.isPresent()) {
+                token = jwtUtils.generateToken(authentication.getName(), userOptional.get());
+                return ResponseEntity.ok(new JwtResponse(token));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
 
-            return ResponseEntity.ok(new JwtResponse(token));
         } catch (Throwable e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
