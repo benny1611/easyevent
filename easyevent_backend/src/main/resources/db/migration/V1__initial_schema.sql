@@ -26,6 +26,7 @@ CREATE TABLE events (
     id BIGINT PRIMARY KEY,
     title TEXT NOT NULL,
     date TEXT NOT NULL,
+    number_of_seats INT NOT NULL,
     created_by BIGINT NOT NULL,
     FOREIGN KEY (created_by) REFERENCES users(id)
 );

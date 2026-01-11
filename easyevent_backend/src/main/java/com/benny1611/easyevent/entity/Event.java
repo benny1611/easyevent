@@ -18,6 +18,9 @@ public class Event {
     @Column(name = "date", nullable = false)
     private String date;
 
+    @Column(name = "number_of_seats", nullable = false)
+    private Integer numberOfSeats;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
