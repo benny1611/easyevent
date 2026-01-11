@@ -5,6 +5,8 @@ import com.benny1611.easyevent.dto.JwtResponse;
 import com.benny1611.easyevent.dto.LoginRequest;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.util.JwtUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -23,6 +25,8 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/auth")
 public class LoginController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LoginController.class);
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
@@ -58,7 +62,7 @@ public class LoginController {
             }
 
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOG.error("Could not login: {}", e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
 
