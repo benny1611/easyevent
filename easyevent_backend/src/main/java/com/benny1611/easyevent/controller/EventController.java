@@ -3,7 +3,6 @@ package com.benny1611.easyevent.controller;
 import com.benny1611.easyevent.dto.CreateEventRequest;
 import com.benny1611.easyevent.dto.CreateEventResponse;
 import com.benny1611.easyevent.dto.EventResponse;
-import com.benny1611.easyevent.entity.Event;
 import com.benny1611.easyevent.service.EventService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -12,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,8 +33,11 @@ public class EventController {
     }
 
     @GetMapping
-    public Page<EventResponse> getAllEvents(@AuthenticationPrincipal String email, @PageableDefault(size = 20, sort = "date") Pageable pageable) {
-        return eventService.getEvents(pageable);
+    public PagedModel<EntityModel<EventResponse>> getAllEvents(@AuthenticationPrincipal String email,
+                                                               @PageableDefault(size = 20, sort = "date") Pageable pageable,
+                                                               PagedResourcesAssembler<EventResponse> assembler) {
+        Page<EventResponse> page = eventService.getEvents(pageable);
+        return assembler.toModel(page);
     }
 
     @GetMapping("/{id}")
