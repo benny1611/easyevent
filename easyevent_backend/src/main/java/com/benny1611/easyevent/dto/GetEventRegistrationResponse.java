@@ -6,7 +6,7 @@ import lombok.Data;
 import java.time.Instant;
 
 @Data
-public class EventRegistrationResponse {
+public class GetEventRegistrationResponse {
     private Long id;
     private Long eventId;
     private String name;
@@ -14,8 +14,8 @@ public class EventRegistrationResponse {
     private boolean isGuest;
     private Instant registeredAt;
 
-    public static EventRegistrationResponse fromEntity(EventRegistration reg) {
-        EventRegistrationResponse response = new EventRegistrationResponse();
+    public static GetEventRegistrationResponse fromEntity(EventRegistration reg) {
+        GetEventRegistrationResponse response = new GetEventRegistrationResponse();
         response.setId(reg.getId());
         response.setEventId(reg.getEvent().getId());
         response.setRegisteredAt(Instant.parse(reg.getRegisteredAt()));
