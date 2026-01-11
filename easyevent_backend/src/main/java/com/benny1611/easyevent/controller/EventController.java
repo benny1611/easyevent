@@ -2,20 +2,20 @@ package com.benny1611.easyevent.controller;
 
 import com.benny1611.easyevent.dto.CreateEventRequest;
 import com.benny1611.easyevent.dto.CreateEventResponse;
+import com.benny1611.easyevent.dto.EventResponse;
+import com.benny1611.easyevent.entity.Event;
 import com.benny1611.easyevent.service.EventService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/events")
@@ -30,6 +30,15 @@ public class EventController {
         this.eventService = eventService;
     }
 
+    @GetMapping
+    public Page<EventResponse> getAllEvents(@AuthenticationPrincipal String email, @PageableDefault(size = 20, sort = "date") Pageable pageable) {
+        return eventService.getEvents(pageable);
+    }
+
+    @GetMapping("/{id}")
+    public EventResponse getEventById(@PathVariable("id") long id) {
+        return eventService.getEventById(id);
+    }
 
     @PostMapping("/create")
     @PreAuthorize("hasRole('USER')")

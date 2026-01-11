@@ -4,13 +4,16 @@ import com.benny1611.easyevent.dao.EventRepository;
 import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.dto.CreateEventRequest;
 import com.benny1611.easyevent.dto.CreateEventResponse;
+import com.benny1611.easyevent.dto.EventResponse;
 import com.benny1611.easyevent.entity.Event;
 import com.benny1611.easyevent.entity.User;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
@@ -23,6 +26,28 @@ public class EventService {
     public EventService(EventRepository eventRepository, UserRepository userRepository) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
+    }
+
+    public EventResponse getEventById(long id) {
+        Event event = eventRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Event with id " + id + " not found"));
+        return new EventResponse(
+                event.getId(),
+                event.getTitle(),
+                event.getNumberOfSeats(),
+                event.getDate(),
+                event.getCreatedBy().getEmail()
+        );
+    }
+
+    public Page<EventResponse> getEvents(Pageable pageable) {
+        return eventRepository.findAll(pageable)
+                .map(event -> new EventResponse(
+                        event.getId(),
+                        event.getTitle(),
+                        event.getNumberOfSeats(),
+                        event.getDate(),
+                        event.getCreatedBy().getEmail()
+                ));
     }
 
     public CreateEventResponse createEvent(CreateEventRequest request, String username) {

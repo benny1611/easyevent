@@ -1,5 +1,9 @@
 package com.benny1611.easyevent.handler;
 
+import com.benny1611.easyevent.dto.ApiError;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,27 +15,53 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<String> handleBadRequest(IllegalStateException ex) {
-        return ResponseEntity
-                .badRequest()
-                .body(ex.getMessage());
+    public ResponseEntity<ApiError> handleBadRequest(IllegalStateException ex, HttpServletRequest request) {
+        ApiError error = new ApiError(HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI());
+
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleBadArgument(IllegalArgumentException ex) {
+    public ResponseEntity<ApiError> handleBadArgument(IllegalArgumentException ex, HttpServletRequest request) {
+        ApiError error = new ApiError(HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI());
+
         return ResponseEntity
                 .badRequest()
-                .body(ex.getMessage());
+                .body(error);
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ApiError> handleEntityNotFound(EntityNotFoundException ex,
+                                                         HttpServletRequest request) {
+        ApiError error = new ApiError(HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiError> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(fe -> fe.getField() + ":" + fe.getDefaultMessage())
                 .collect(Collectors.joining("; "));
 
-        return ResponseEntity.badRequest().body(message);
+        ApiError error = new ApiError(HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                message,
+                request.getRequestURI());
+
+        return ResponseEntity.badRequest().body(error);
     }
 }
