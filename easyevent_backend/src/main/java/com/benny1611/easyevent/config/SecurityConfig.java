@@ -4,6 +4,10 @@ import com.benny1611.easyevent.service.CustomUserDetailsService;
 import com.benny1611.easyevent.util.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -54,5 +58,31 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        RoleHierarchyImpl hierarchy = RoleHierarchyImpl.withDefaultRolePrefix()
+                .role("ADMIN").implies("USER").build();
+        return hierarchy;
+    }
+
+    @Bean
+    @SuppressWarnings("deprecation")
+    public MethodSecurityExpressionHandler methodSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
+        /*
+         * Spring Security 6.x / early 7.x:
+         * Role hierarchy support for @PreAuthorize still requires
+         * DefaultMethodSecurityExpressionHandler#setRoleHierarchy(..).
+         *
+         * The recommended AuthorizationManager-based replacement
+         * does not yet provide equivalent role hierarchy support.
+         *
+         * TODO: Revisit when Spring Security offers first-class
+         * method-security role hierarchy support.
+         */
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setRoleHierarchy(roleHierarchy);
+        return handler;
     }
 }
