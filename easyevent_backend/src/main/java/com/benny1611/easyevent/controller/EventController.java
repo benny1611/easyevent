@@ -14,6 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -50,5 +51,12 @@ public class EventController {
     public ResponseEntity<CreateEventResponse> createEvent(@AuthenticationPrincipal String email, @Valid @RequestBody CreateEventRequest request) {
         CreateEventResponse response = eventService.createEvent(request, email);
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@eventSecurity.canDeleteEvent(#id, authentication)")
+    public ResponseEntity<Void> deleteEvent(@PathVariable("id") long id) {
+        eventService.deleteEvent(id);
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 }

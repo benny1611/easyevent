@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -50,6 +51,7 @@ public class EventService {
                 ));
     }
 
+    @Transactional
     public CreateEventResponse createEvent(CreateEventRequest request, String username) {
         String title = request.getTitle();
         Integer numberOfSeats = request.getNumberOfSeats();
@@ -85,5 +87,11 @@ public class EventService {
 
 
         return response;
+    }
+
+    @Transactional
+    public void deleteEvent(long id) {
+        Event event = eventRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Event " + id + " not found"));
+        eventRepository.delete(event);
     }
 }
