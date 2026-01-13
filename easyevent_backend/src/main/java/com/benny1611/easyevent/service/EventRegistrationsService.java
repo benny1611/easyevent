@@ -38,11 +38,11 @@ public class EventRegistrationsService {
     }
 
     public void registerToAnEvent(String email, EventRegistrationRequest request) {
-        Event event = eventRepository.findById(request.getEventId()).orElseThrow(() -> new IllegalArgumentException("Event" + request.getEventId() + " not found"));
+        Event event = eventRepository.findById(request.getEventId()).orElseThrow(() -> new IllegalArgumentException("Event " + request.getEventId() + " not found"));
 
         // Sanity check: First check if the user is a guest or not
         User user = null;
-        if (email != null) {
+        if (email != null && !"anonymousUser".equals(email)) {
             user = userRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("Could not find user: " + email));
         } else {
             Optional<User> userSanityCheckOptional = userRepository.findByEmail(request.getEmail());
@@ -53,10 +53,11 @@ public class EventRegistrationsService {
         }
 
         // Check if there's already a registration made for this event for this guest
+        Guest guest = null;
         if (user == null) {
             Optional<Guest> guestOptional = guestRepository.findByEmail(request.getEmail());
             if (guestOptional.isPresent()) {
-                Guest guest = guestOptional.get();
+                guest = guestOptional.get();
                 Optional<EventRegistration> guestRegistrationOptional = eventRegistrationRepository.findByEventIdAndGuestId(event.getId(), guest.getId());
                 if (guestRegistrationOptional.isPresent()) {
                     throw new IllegalStateException("User already registered for this event");
@@ -72,13 +73,16 @@ public class EventRegistrationsService {
         EventRegistration registration = new EventRegistration();
         registration.setEvent(event);
 
-        if (user == null) {
+        if (user != null) {
             registration.setUser(user);
             registration.setGuest(null);
         } else {
-            Guest guest = new Guest();
+            if (guest == null) {
+                guest = new Guest();
+            }
             guest.setName(request.getName());
             guest.setEmail(request.getEmail());
+            guestRepository.save(guest);
             registration.setGuest(guest);
             registration.setUser(null);
         }
