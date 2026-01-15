@@ -43,11 +43,10 @@ function ResponsiveAppBar() {
 
 
   return (
-    <AppBar position="fixed">
+    <AppBar position="fixed" color="default">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
-          {/*<SvgIcon component={LogoIcon} sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />*/}
-          <SvgIcon component={LogoIcon} inheritViewBox />
+          <SvgIcon component={LogoIcon} inheritViewBox sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
           <Typography
             variant="h6"
             noWrap
@@ -100,7 +99,7 @@ function ResponsiveAppBar() {
               ))}
             </Menu>
           </Box>
-          <AdbIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
+          <SvgIcon component={LogoIcon} inheritViewBox sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
           <Typography
             variant="h5"
             noWrap
@@ -124,7 +123,7 @@ function ResponsiveAppBar() {
               <Button
                 key={page}
                 onClick={handleCloseNavMenu}
-                sx={{ my: 2, color: 'white', display: 'block' }}
+                sx={{ my: 2, color: 'inherit', display: 'block' }}
               >
                 {page}
               </Button>
