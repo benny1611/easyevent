@@ -6,7 +6,7 @@ type Language = "en";
 const translations = {en};
 
 const I18nContext = createContext({
-    text: translations.en,
+    translation: translations.en,
     setLanguage: (_: Language) => {},
 });
 
@@ -16,7 +16,7 @@ export const I18nProvider: React.FC<{children: React.ReactNode }> = ({ children 
     return(
         <I18nContext.Provider
             value={{
-                text: translations[language],
+                translation: translations[language],
                 setLanguage,
             }}
         >

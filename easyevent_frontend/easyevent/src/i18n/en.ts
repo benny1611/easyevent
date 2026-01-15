@@ -5,8 +5,13 @@ const en = {
         login: "Login",
         home: "Home",
         create: "Create",
-        register: "Register"
+        join: "Join"
     },
+    hero: {
+        mantra: "Create events in minutes. Join events instantly — no account required.",
+        create: "Create an Event",
+        join: "Join an Event"
+    }
 };
 
 export default en;

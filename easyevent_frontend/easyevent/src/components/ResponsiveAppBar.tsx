@@ -21,8 +21,8 @@ import LogoIcon from '../assets/react.svg?react'
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
 function ResponsiveAppBar() {
-  const {text} = useI18n();
-  const pages = [text.nav.home, text.nav.create, text.nav.register, text.nav.login];
+  const {translation} = useI18n();
+  const pages = [translation.nav.home, translation.nav.create, translation.nav.join, translation.nav.login];
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
@@ -62,7 +62,7 @@ function ResponsiveAppBar() {
               textDecoration: 'none',
             }}
           >
-            {text.appName}
+            {translation.appName}
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -116,7 +116,7 @@ function ResponsiveAppBar() {
               textDecoration: 'none',
             }}
           >
-            {text.appName}
+            {translation.appName}
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
@@ -129,7 +129,9 @@ function ResponsiveAppBar() {
               </Button>
             ))}
           </Box>
-          {/*<Box sx={{ flexGrow: 0 }}>
+          {
+          // TODO: Implement this when the user system is ready, then you can show the user menu.          
+          /*<Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
