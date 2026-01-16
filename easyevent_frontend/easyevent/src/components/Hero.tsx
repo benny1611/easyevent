@@ -12,6 +12,7 @@ export default function Hero({ sx }: HeroProps) {
     <Box
       component="section"
       sx={{
+        minHeight: '100vh',
         width: '100%',
         display: 'flex',
         alignItems: 'center',
