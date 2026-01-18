@@ -3,6 +3,7 @@ import ResponsiveAppBar from './components/ResponsiveAppBar'
 import Hero from './components/Hero'
 import HowItWorks from './components/HowItWorks'
 import Features from './components/Features'
+import CallToAction from './components/CallToAction'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Hero sx={{ flexGrow: 1 }} />
         <HowItWorks />
         <Features />
+        <CallToAction />
       </Box>
     </>
   )

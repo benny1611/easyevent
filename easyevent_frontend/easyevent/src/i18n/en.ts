@@ -33,7 +33,13 @@ const en = {
         manage_description: "Track registrations, update details, and stay organized.",
         fast_title: "Fast & Simple Setup",
         fast_description: "Create and publish events in minutes, not hours."
-    }
+    },
+    cta: {
+        title: "Ready to host your next event?",
+        subtitle: "Create events in minutes or join instantly — no unnecessary steps.",
+        create: "Create an Event",
+        join: "Join an Event",
+    },
 };
 
 export default en;
