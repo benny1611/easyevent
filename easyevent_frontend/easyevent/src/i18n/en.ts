@@ -21,6 +21,18 @@ const en = {
         share_description: "Send the event link to anyone. Participants can join without creating an account.",
         get_notified: "Get Notified",
         get_notified_description: "Automatic email notifications for you and your participants. No manual follow-ups.",
+    },
+    features: {
+        title: "Everything you need to run events",
+        subtitle: "EasyEvent gives you powerful tools without complexity.",
+        no_account_title: "No Account Needed to Join",
+        no_account_description: "Participants can register instantly using only their email.",
+        email_title: "Automatic Email Notifications",
+        email_description: "Creators and participants stay informed at every step.",
+        manage_title: "Manage Your Events",
+        manage_description: "Track registrations, update details, and stay organized.",
+        fast_title: "Fast & Simple Setup",
+        fast_description: "Create and publish events in minutes, not hours."
     }
 };
 
