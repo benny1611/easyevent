@@ -4,6 +4,7 @@ import Hero from './components/Hero'
 import HowItWorks from './components/HowItWorks'
 import Features from './components/Features'
 import CallToAction from './components/CallToAction'
+import Footer from './components/Footer'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <HowItWorks />
         <Features />
         <CallToAction />
+        <Footer />
       </Box>
     </>
   )

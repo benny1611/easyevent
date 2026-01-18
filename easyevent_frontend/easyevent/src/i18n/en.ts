@@ -40,6 +40,16 @@ const en = {
         create: "Create an Event",
         join: "Join an Event",
     },
+    footer: {
+        tagline: "Create events easily. Join instantly. No friction.",
+        product: "Product",
+        create: "Create Event",
+        join: "Join Event",
+        legal: "Legal",
+        privacy: "Privacy Policy",
+        terms: "Terms of Service",
+        rights: "EasyEvent. All rights reserved."
+    }
 };
 
 export default en;
