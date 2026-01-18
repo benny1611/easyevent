@@ -2,7 +2,7 @@ import { Box, Container, Grid, Stack, Typography } from '@mui/material'
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import ShareIcon from '@mui/icons-material/Share'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
-import { useI18n } from '../i18n/i18nContext';
+import { useI18n } from '../../i18n/i18nContext';
 
 export default function HowItWorks() {
 

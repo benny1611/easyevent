@@ -1,6 +1,6 @@
 import { Box, Button, Container, Stack, SvgIcon, Typography } from '@mui/material'
-import { useI18n } from '../i18n/i18nContext';
-import LogoIcon from '../assets/react.svg?react'
+import { useI18n } from '../../i18n/i18nContext';
+import LogoIcon from '../../assets/react.svg?react'
 
 interface HeroProps {
   sx?: React.ComponentProps<typeof Box>['sx'];

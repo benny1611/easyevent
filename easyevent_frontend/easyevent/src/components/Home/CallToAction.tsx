@@ -1,5 +1,5 @@
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
-import { useI18n } from "../i18n/i18nContext";
+import { useI18n } from "../../i18n/i18nContext";
 
 export default function CallToAction() {
     const {translation} = useI18n();

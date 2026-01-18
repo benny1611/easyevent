@@ -1,10 +1,7 @@
 import { Box, CssBaseline, Toolbar } from '@mui/material'
 import ResponsiveAppBar from './components/ResponsiveAppBar'
-import Hero from './components/Hero'
-import HowItWorks from './components/HowItWorks'
-import Features from './components/Features'
-import CallToAction from './components/CallToAction'
 import Footer from './components/Footer'
+import Home from './components/Home/Home'
 
 function App() {
   return (
@@ -13,10 +10,7 @@ function App() {
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <ResponsiveAppBar />
         <Toolbar />
-        <Hero sx={{ flexGrow: 1 }} />
-        <HowItWorks />
-        <Features />
-        <CallToAction />
+        <Home />
         <Footer />
       </Box>
     </>

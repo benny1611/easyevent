@@ -1,4 +1,4 @@
-import { useI18n } from "../i18n/i18nContext";
+import { useI18n } from "../../i18n/i18nContext";
 import LoginIcon from '@mui/icons-material/Login'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize'
