@@ -33,7 +33,7 @@ export default function Features() {
     ];
 
     return (
-        <Box component="section" sx={{ py: {xs: 8, md: 12} }}>
+        <Box component="section" sx={{ py: {xs: 8}, pb: {md: 12}, pt: {md: 0}}}>
             <Container maxWidth="lg">
                 <Stack spacing={6}>
                     {/* Header */}
@@ -59,6 +59,8 @@ export default function Features() {
                                         border: '1px solid',
                                         borderColor: 'divider',
                                         transition: 'all 0.3s ease',
+                                        alignItems: "center",
+                                        textAlign: "center",
                                         '&:hover': {
                                             boxShadow: 3,
                                             transform: 'translateY(-4px)',
@@ -87,7 +89,7 @@ export default function Features() {
                                             {feature.description}
                                         </Typography>
 
-                                    </Stack>
+                                </Stack>
                             </Grid>
                         ))}
                     </Grid>

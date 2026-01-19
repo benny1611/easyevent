@@ -7,7 +7,7 @@ export default function Home() {
 
     return (
         <>
-            <Hero sx={{ flexGrow: 1 }} />
+            <Hero/>
             <HowItWorks />
             <Features />
             <CallToAction />

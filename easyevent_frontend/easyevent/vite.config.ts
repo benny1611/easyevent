@@ -7,5 +7,11 @@ export default defineConfig({
   plugins: [
     react(),
     svgr()
-  ]
+  ],
+  server: {
+    // Allow network access
+    host: '0.0.0.0',
+    // Optional: specify a port
+    port: 3000
+  }
 })

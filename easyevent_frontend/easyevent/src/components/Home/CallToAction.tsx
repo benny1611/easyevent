@@ -31,7 +31,12 @@ export default function CallToAction() {
                             <Button 
                                 size="large"
                                 variant="contained"
-                                color="secondary">
+                                color="secondary"
+                                sx={{
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    fontSize: 20
+                                }}>
                                     {translation.cta.create}
                             </Button>
                             <Button 
@@ -43,7 +48,11 @@ export default function CallToAction() {
                                     "&:hover": {
                                         borderColor: "primary.contrastText",
                                         bgcolor: "rgba(255,255,255,0.1)",
-                                    }
+                                    },
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    fontSize: 20,
+                                    borderWidth: '3px'
                                 }}>
                                     {translation.cta.join}
                             </Button>

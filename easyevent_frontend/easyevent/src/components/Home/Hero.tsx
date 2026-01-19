@@ -1,73 +1,114 @@
-import { Box, Button, Container, Stack, SvgIcon, Typography } from '@mui/material'
-import { useI18n } from '../../i18n/i18nContext';
-import LogoIcon from '../../assets/react.svg?react'
+import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import SvgIcon from "@mui/material/SvgIcon";
+import LogoIcon from "../../assets/react.svg?react";
+import { useI18n } from "../../i18n/i18nContext";
+import backgroundImage from "../../assets/artist-3480274.jpg";
 
-interface HeroProps {
-  sx?: React.ComponentProps<typeof Box>['sx'];
-}
+export default function Hero() {
+  const { translation } = useI18n();
 
-export default function Hero({ sx }: HeroProps) {
-    const {translation} = useI18n();
   return (
     <Box
       component="section"
       sx={{
-        minHeight: '100vh',
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        textAlign: 'center',
-        background: (theme) =>
-            theme.palette.mode === 'dark'
-            ? 'linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.9))'
-            : 'linear-gradient(180deg, #f5f7fa, #e4ebf5)',
-        ...sx,
+        minHeight: (theme) =>
+          `calc(100vh - ${theme.mixins.toolbar.minHeight}px)`,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <Container maxWidth="md">
-        <SvgIcon
-          component={LogoIcon}
-          inheritViewBox
+      {/* Image Section */}
+      <Box
+        sx={{
+          position: "relative",
+          height: "50%",
+          minHeight: {
+            xs: 250,
+            sm: 300,
+            md: 300,
+            lg: 400,
+            xl: 500
+          },
+          backgroundImage:
+            `url(${backgroundImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Overlay */}
+        <Box
           sx={{
-            fontSize: 96,
-            color: 'primary.main',
-            mb: 2,
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            bgcolor: "rgba(0,0,0,0.35)",
           }}
-        />
-        <Stack spacing={4}>
-          {/* App name */}
-          <Typography
-            variant="h2"
-            fontWeight={700}
-            letterSpacing="-0.02em"
-          >
-            {translation.appName}
-          </Typography>
+        >
+          <Stack spacing={2} alignItems="center">
+            <SvgIcon
+              component={LogoIcon}
+              inheritViewBox
+              sx={{ fontSize: 96, color: "white" }}
+            />
 
-          {/* Value proposition */}
-          <Typography
-            variant="h5"
-            color="text.secondary"
-          >
+            <Typography
+              variant="h2"
+              fontWeight={700}
+              letterSpacing="-0.02em"
+              sx={{
+                color: "white",
+                textShadow: "0 4px 12px rgba(0,0,0,0.6)",
+              }}
+            >
+              {translation.appName}
+            </Typography>
+          </Stack>
+        </Box>
+      </Box>
+
+      {/* Content Section */}
+      <Container
+        maxWidth="sm"
+        sx={{
+          py: { xs: 4, md: 6 },
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
+        <Stack spacing={3} alignItems="center">
+          <Typography variant="h6" color="text.secondary">
             {translation.hero.mantra}
           </Typography>
 
-          {/* Actions */}
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            justifyContent="center"
-          >
+          <Stack spacing={2} width="100%">
             <Button
-              variant="contained"
               size="large"
+              variant="contained"
+              fullWidth
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 20
+              }}
             >
               {translation.hero.create}
             </Button>
 
             <Button
-              variant="outlined"
               size="large"
+              variant="outlined"
+              fullWidth
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 20,
+                borderWidth: '3px'
+              }}
             >
               {translation.hero.join}
             </Button>
@@ -75,5 +116,5 @@ export default function Hero({ sx }: HeroProps) {
         </Stack>
       </Container>
     </Box>
-  )
+  );
 }

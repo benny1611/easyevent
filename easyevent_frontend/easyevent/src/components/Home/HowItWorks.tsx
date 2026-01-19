@@ -31,7 +31,7 @@ const steps = [
 
 
   return (
-    <Box component="section" sx={{ py: { xs: 8, md: 12 }, minHeight: "100vh" }}>
+    <Box component="section" sx={{ minHeight: "100vh" }}>
       <Container maxWidth="lg">
         <Stack spacing={6} alignItems="center">
           {/* Header */}

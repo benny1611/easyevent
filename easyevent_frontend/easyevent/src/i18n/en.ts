@@ -9,8 +9,8 @@ const en = {
     },
     hero: {
         mantra: "Create events in minutes. Join events instantly — no account required.",
-        create: "Create an Event",
-        join: "Join an Event"
+        create: "Create Event",
+        join: "Join Event"
     },
     how_it_works: {
         how_it_works: "How It Works...",
