@@ -14,7 +14,9 @@ import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
 import { useI18n } from '../i18n/i18nContext';
 import SvgIcon from '@mui/icons-material/Menu';
-import LogoIcon from '../assets/react.svg?react'
+import LogoIcon from '../assets/react.svg?react';
+import { Link as RouterLink } from "react-router-dom";
+import { Link } from '@mui/material';
 
 
 
@@ -22,7 +24,23 @@ const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
 function ResponsiveAppBar() {
   const {translation} = useI18n();
-  const pages = [translation.nav.home, translation.nav.create, translation.nav.join, translation.nav.login];
+  const pages = [
+    {
+      name: translation.nav.home,
+      link: "/"
+    }, 
+    {
+      name: translation.nav.create,
+      link: "/create"
+    }, 
+    {
+      name: translation.nav.join,
+      link: "/join"
+    }, 
+    {
+      name: translation.nav.login,
+      link: "/login"
+    }];
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
@@ -46,12 +64,12 @@ function ResponsiveAppBar() {
     <AppBar position="fixed" color="default">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
-          <SvgIcon component={LogoIcon} inheritViewBox sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
+          <Link component={RouterLink} to="/"><SvgIcon component={LogoIcon} inheritViewBox sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} /></Link>
           <Typography
             variant="h6"
             noWrap
-            component="a"
-            href="#app-bar-with-responsive-menu"
+            component={RouterLink}
+            to="/"
             sx={{
               mr: 2,
               display: { xs: 'none', md: 'flex' },
@@ -93,8 +111,8 @@ function ResponsiveAppBar() {
               sx={{ display: { xs: 'block', md: 'none' } }}
             >
               {pages.map((page) => (
-                <MenuItem key={page} onClick={handleCloseNavMenu}>
-                  <Typography sx={{ textAlign: 'center' }}>{page}</Typography>
+                <MenuItem key={page.name} onClick={handleCloseNavMenu}>
+                  <Typography component={RouterLink} to={page.link} sx={{ textAlign: 'center' }}>{page.name}</Typography>
                 </MenuItem>
               ))}
             </Menu>
@@ -121,11 +139,13 @@ function ResponsiveAppBar() {
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
               <Button
-                key={page}
+                key={page.name}
+                component={RouterLink}
+                to={page.link}
                 onClick={handleCloseNavMenu}
                 sx={{ my: 2, color: 'inherit', display: 'block' }}
               >
-                {page}
+                {page.name}
               </Button>
             ))}
           </Box>
