@@ -5,6 +5,7 @@ import com.benny1611.easyevent.dto.JwtResponse;
 import com.benny1611.easyevent.dto.LoginRequest;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.util.JwtUtils;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(

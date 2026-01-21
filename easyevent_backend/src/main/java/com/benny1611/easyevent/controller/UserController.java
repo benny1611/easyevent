@@ -3,6 +3,7 @@ package com.benny1611.easyevent.controller;
 import com.benny1611.easyevent.dto.CreateUserRequest;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class UserController {
 
     @PostMapping
     @RequestMapping("/create")
-    public ResponseEntity<User> createUser(@RequestBody CreateUserRequest request) throws AccessDeniedException {
+    public ResponseEntity<User> createUser(@Valid @RequestBody CreateUserRequest request) throws AccessDeniedException {
         User user = userService.createUser(request);
         return new ResponseEntity<>(user, HttpStatus.CREATED);
     }

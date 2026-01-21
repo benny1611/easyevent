@@ -39,24 +39,22 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (createUserRequest.getRoles() != null) {
-            Set<String> roleNames = createUserRequest.getRoles();
-            boolean isAllowedToBeCreatedByCurrentUser = false;
-            if (roleNames.contains("ROLE_ADMIN") || roleNames.contains("ADMIN")) {
-                if (auth != null) {
-                    isAllowedToBeCreatedByCurrentUser = auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
-                }
-            } else {
-                isAllowedToBeCreatedByCurrentUser = true;
+        Set<String> roleNames = createUserRequest.getRoles();
+        boolean isAllowedToBeCreatedByCurrentUser = false;
+        if (roleNames.contains("ROLE_ADMIN") || roleNames.contains("ADMIN")) {
+            if (auth != null) {
+                isAllowedToBeCreatedByCurrentUser = auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
             }
-            if (isAllowedToBeCreatedByCurrentUser) {
-                Set<Role> roles = roleNames.stream()
-                        .map(roleName -> roleRepository.findByName(roleName).orElseThrow(() -> new RuntimeException("Role not found: " + roleName)))
-                        .collect(Collectors.toSet());
-                user.setRoles(roles);
-            } else {
-                throw new AccessDeniedException("You can't perform that operation");
-            }
+        } else {
+            isAllowedToBeCreatedByCurrentUser = true;
+        }
+        if (isAllowedToBeCreatedByCurrentUser) {
+            Set<Role> roles = roleNames.stream()
+                    .map(roleName -> roleRepository.findByName(roleName).orElseThrow(() -> new RuntimeException("Role not found: " + roleName)))
+                    .collect(Collectors.toSet());
+            user.setRoles(roles);
+        } else {
+            throw new AccessDeniedException("You can't perform that operation");
         }
 
         return userRepository.save(user);
