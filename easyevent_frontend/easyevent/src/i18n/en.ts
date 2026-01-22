@@ -49,6 +49,13 @@ const en = {
         privacy: "Privacy Policy",
         terms: "Terms of Service",
         rights: "EasyEvent. All rights reserved."
+    },
+    login: {
+        login: "Login",
+        email: "Email",
+        password: "Password",
+        invalid_credentials: "Email or password wrong",
+        login_failed: "Login failed",
     }
 };
 
