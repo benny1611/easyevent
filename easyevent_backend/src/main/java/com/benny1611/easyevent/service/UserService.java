@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,10 +31,6 @@ public class UserService {
 
     private static final int MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final Path UPLOAD_ROOT = Paths.get("uploads/users");
-    private static final byte[] PNG_MAGIC = new byte[] {
-            (byte) 0x89, 0x50, 0x4E, 0x47,
-            0x0D, 0x0A, 0x1A, 0x0A
-    };
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -82,7 +79,8 @@ public class UserService {
             Files.createDirectories(userDir);
 
             Path avatarPath = userDir.resolve("avatar.png");
-            profilePicture.transferTo(avatarPath.toFile());
+
+            saveAsPng(profilePicture, avatarPath);
 
             user.setProfilePictureUrl("/users/" + user.getId() + "/avatar.png");
             user = userRepository.save(user);
@@ -98,19 +96,27 @@ public class UserService {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new IllegalArgumentException("Max file size is 5MB");
         }
-        if (!"image/png".equalsIgnoreCase(file.getContentType())) {
-            throw new IllegalArgumentException("Only PNG images are allowed");
-        }
-        try (InputStream is = file.getInputStream()) {
-            byte[] header = is.readNBytes(8);
 
-            if (header.length < 8 || !Arrays.equals(header, PNG_MAGIC)) {
-                throw new IllegalArgumentException("Invalid PNG file");
-            }
+        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+            throw new IllegalArgumentException("File must be an image");
         }
+
+        BufferedImage image = ImageIO.read(file.getInputStream());
+        if (image == null) {
+            throw new IllegalArgumentException("Invalid or corrupted image");
+        }
+    }
+
+    private static void saveAsPng(MultipartFile file, Path outputPath) throws IOException {
         BufferedImage image = ImageIO.read(file.getInputStream());
         if (image == null) {
             throw new IllegalArgumentException("Corrupted PNG file");
         }
+
+        BufferedImage resized = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = resized.createGraphics();
+        g.drawImage(image, 0, 0, 256, 256, null);
+        g.dispose();
+        ImageIO.write(resized, "png", outputPath.toFile());
     }
 }
