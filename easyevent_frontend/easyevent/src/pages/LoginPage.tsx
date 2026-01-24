@@ -63,7 +63,16 @@ export default function LoginPage() {
             {error && <Alert severity="error">{error}</Alert>}
 
             <TextField label={translation.login.email} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-            <TextField label={translation.login.password} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+            <TextField 
+            label={translation.login.password} 
+            type="password" 
+            value={password} onChange={(e) => setPassword(e.target.value)} 
+            onKeyDown={(e) => {
+              if(e.key === 'Enter') {
+                handleLogin();
+              }
+            }}
+            autoComplete="current-password" />
 
             <Button variant="contained" size="large" onClick={handleLogin} disabled={loading}>
               {translation.login.login}

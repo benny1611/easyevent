@@ -3,9 +3,13 @@ const en = {
 
     nav: {
         login: "Login",
+        logout: "Logout",
         home: "Home",
         create: "Create",
-        join: "Join"
+        join: "Join",
+        profile: "Profile",
+        dashboard: "Dashboard",
+        account: "Account"
     },
     hero: {
         mantra: "Create events in minutes. Join events instantly — no account required.",
