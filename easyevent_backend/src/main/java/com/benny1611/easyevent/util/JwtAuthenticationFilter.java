@@ -27,6 +27,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.roleRepository = roleRepository;
     }
 
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/users/");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
