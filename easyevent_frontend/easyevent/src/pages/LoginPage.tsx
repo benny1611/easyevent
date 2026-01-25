@@ -1,10 +1,11 @@
-import { Alert, Box, Button, Container, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Container, Link, Stack, TextField, Typography } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
 import { ENV } from "../config/env";
 import { useI18n } from "../i18n/i18nContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import LoginRequest from "../models/dto/LoginRequest";
+import { Link as RouterLink } from "react-router-dom";
 
 export default function LoginPage() {
   const {login} = useAuth();
@@ -53,7 +54,8 @@ export default function LoginPage() {
       }}>
         <Container maxWidth="sm"
         sx={{
-          alignContent: "center"
+          alignContent: "center",
+          mt: 5
         }}>
           <Stack spacing={3}>
             <Typography variant="h4" textAlign="center">
@@ -74,9 +76,21 @@ export default function LoginPage() {
             }}
             autoComplete="current-password" />
 
-            <Button variant="contained" size="large" onClick={handleLogin} disabled={loading}>
+            <Button variant="contained" 
+            size="large" 
+            onClick={handleLogin} 
+            disabled={loading}
+            fullWidth
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: 20
+            }}>
               {translation.login.login}
             </Button>
+            <Typography variant="subtitle2" textAlign="left">
+              {translation.login.no_account} <Link component={RouterLink} to="/register">{translation.login.sign_in}</Link>
+            </Typography>
           </Stack>
         </Container>
       </Box>

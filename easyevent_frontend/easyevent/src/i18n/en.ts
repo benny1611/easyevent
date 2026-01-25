@@ -60,6 +60,19 @@ const en = {
         password: "Password",
         invalid_credentials: "Email or password wrong",
         login_failed: "Login failed",
+        no_account: "Don't have an account?",
+        sign_in: "Sign in"
+    },
+    register: {
+        create_account: "Create Account",
+        name: "Name",
+        email: "Email",
+        password: "Password",
+        repeat_password: "Repeat Password",
+        register: "Register",
+        creating_account: "Creating account",
+        pws_don_t_match: "Passwords do not match",
+        registration_failed: "Registration failed",
     }
 };
 
