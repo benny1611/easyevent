@@ -1,19 +1,19 @@
 -- GUESTS
 CREATE TABLE guests (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE
 );
 
 -- EVENT REGISTRATIONS
 CREATE TABLE event_registrations (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
 
     event_id BIGINT NOT NULL,
     user_id BIGINT,
     guest_id BIGINT,
 
-    registered_at TEXT NOT NULL,
+    registered_at TIMESTAMPTZ NOT NULL,
 
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,

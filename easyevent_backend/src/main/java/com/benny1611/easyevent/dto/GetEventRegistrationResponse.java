@@ -18,7 +18,7 @@ public class GetEventRegistrationResponse {
         GetEventRegistrationResponse response = new GetEventRegistrationResponse();
         response.setId(reg.getId());
         response.setEventId(reg.getEvent().getId());
-        response.setRegisteredAt(Instant.parse(reg.getRegisteredAt()));
+        response.setRegisteredAt(reg.getRegisteredAt());
 
         boolean isGuest = reg.isGuestRegistration();
 

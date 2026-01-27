@@ -3,6 +3,7 @@ package com.benny1611.easyevent.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -18,7 +19,7 @@ public class Event {
     private String title;
 
     @Column(name = "date", nullable = false)
-    private String date;
+    private Instant date;
 
     @Column(name = "number_of_seats", nullable = false)
     private Integer numberOfSeats;

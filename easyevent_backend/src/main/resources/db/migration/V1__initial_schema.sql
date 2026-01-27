@@ -1,6 +1,6 @@
 -- USERS
 CREATE TABLE users (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL
@@ -8,7 +8,7 @@ CREATE TABLE users (
 
 -- ROLES
 CREATE TABLE roles (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE
 );
 
@@ -23,9 +23,9 @@ CREATE TABLE user_roles (
 
 -- EVENTS
 CREATE TABLE events (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
-    date TEXT NOT NULL,
+    date TIMESTAMPTZ NOT NULL,
     number_of_seats INT NOT NULL,
     created_by BIGINT NOT NULL,
     FOREIGN KEY (created_by) REFERENCES users(id)

@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
@@ -74,13 +75,13 @@ public class EventService {
 
         event.setTitle(title);
         event.setNumberOfSeats(numberOfSeats);
-        event.setDate(localDate.toString());
+        event.setDate(Instant.from(localDate));
         event.setCreatedBy(user);
 
         event = eventRepository.save(event);
 
         CreateEventResponse response = new CreateEventResponse();
-        response.setDate(localDate.toString());
+        response.setDate(Instant.from(localDate));
         response.setNumberOfSeats(numberOfSeats);
         response.setTitle(title);
         response.setId(event.getId());

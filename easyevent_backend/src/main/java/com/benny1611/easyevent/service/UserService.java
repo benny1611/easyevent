@@ -11,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -42,6 +43,7 @@ public class UserService {
         this.roleRepository = roleRepository;
     }
 
+    @Transactional
     public User createUser(CreateUserRequest createUserRequest, MultipartFile profilePicture) throws IOException {
         User user = new User();
 

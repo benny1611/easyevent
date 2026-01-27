@@ -31,7 +31,7 @@ public class EventRegistration {
     private Guest guest;
 
     @Column(name = "registered_at", nullable = false)
-    private String registeredAt = Instant.now().toString();
+    private Instant registeredAt = Instant.now();
 
     public boolean isGuestRegistration() {
         return guest != null;
