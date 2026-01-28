@@ -1,13 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { JwtPayload } from "./JwtPayload";
+import type LoginResponse from "../models/dto/LoginResponse";
 
 
 type AuthContextType = {
     token: string | null;
     roles: string[];
+    profilePictureUrl: string | null;
+    username: string;
     isAuthenticated: boolean;
     hasRole: (role: string) => boolean;
-    login: (token: string) => void;
+    login: (input: LoginResponse) => void;
     logout: () => void;
 }
 
@@ -54,9 +57,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         return () => clearTimeout(timer);
     }, [payload]);
 
-    const login = (jwt: string) => {
-        localStorage.setItem(STORAGE_KEY, jwt);
-        setToken(jwt);
+    const login = (input: LoginResponse) => {
+        localStorage.setItem(STORAGE_KEY, input.token);
+        setToken(input.token);
     }
 
     const logout = () => {
@@ -70,6 +73,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         isAuthenticated: !!token,
         userEmail: payload?.sub ?? null,
         roles: payload?.roles ?? [],
+        profilePictureUrl: payload?.profilePictureUrl ?? null,
+        username: payload?.username ?? "",
         login,
         logout,
         hasRole: (role: string) => payload?.roles.includes(role) ?? false,

@@ -17,17 +17,18 @@ import LogoIcon from '../assets/react.svg?react';
 import { Link as RouterLink } from "react-router-dom";
 import { Link } from '@mui/material';
 import { useAuth } from '../auth/AuthContext';
+import { ENV } from '../config/env';
 
 function ResponsiveAppBar() {
   const {translation} = useI18n();
-  const {isAuthenticated, logout} = useAuth();
+  const {isAuthenticated, logout, profilePictureUrl, username} = useAuth();
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget);
   };
-  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {    
     setAnchorElUser(event.currentTarget);
   };
 
@@ -105,7 +106,7 @@ function ResponsiveAppBar() {
               </MenuItem>
               {
                 isAuthenticated ?
-                <></>
+                null
                 :
                 <MenuItem key={translation.nav.login} onClick={handleCloseNavMenu}>
                   <Typography component={RouterLink} to="/login" sx={{ textAlign: 'center' }}>{translation.nav.login}</Typography>
@@ -158,9 +159,7 @@ function ResponsiveAppBar() {
                   {translation.nav.join}
             </Button>
             {
-              isAuthenticated ?
-              <></>
-              :
+              isAuthenticated ? null :
               <Button
                 key={translation.nav.login}
                 component={RouterLink}
@@ -173,11 +172,11 @@ function ResponsiveAppBar() {
           </Box>
           {
           // TODO: Implement this when the user system is ready, then you can show the user menu.
-          isAuthenticated &&
+          isAuthenticated ? (
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
+                <Avatar alt={username} src={profilePictureUrl ? `${ENV.BARE_URL_BASE}${profilePictureUrl}` : undefined}> {username?.charAt(0).toUpperCase()} </Avatar>
               </IconButton>
             </Tooltip>
             <Menu
@@ -209,7 +208,7 @@ function ResponsiveAppBar() {
                   <Typography sx={{ textAlign: 'center' }}>{translation.nav.logout}</Typography>
               </MenuItem>
             </Menu>
-          </Box>}
+          </Box>) : null}
         </Toolbar>
       </Container>
     </AppBar>

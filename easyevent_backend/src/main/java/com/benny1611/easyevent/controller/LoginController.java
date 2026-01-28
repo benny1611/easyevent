@@ -1,7 +1,7 @@
 package com.benny1611.easyevent.controller;
 
 import com.benny1611.easyevent.dao.UserRepository;
-import com.benny1611.easyevent.dto.JwtResponse;
+import com.benny1611.easyevent.dto.LoginResponse;
 import com.benny1611.easyevent.dto.LoginRequest;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.util.JwtUtils;
@@ -41,7 +41,7 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -55,8 +55,9 @@ public class LoginController {
             Optional<User> userOptional = userRepository.findByEmailWithRoles(request.getEmail());
             String token;
             if (userOptional.isPresent()) {
-                token = jwtUtils.generateToken(authentication.getName(), userOptional.get());
-                return ResponseEntity.ok(new JwtResponse(token));
+                User user = userOptional.get();
+                token = jwtUtils.generateToken(authentication.getName(), user);
+                return ResponseEntity.ok(new LoginResponse(token));
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }

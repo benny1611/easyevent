@@ -1,4 +1,4 @@
-export class JwtResponse {
+export class LoginResponse {
     token: string;
 
     constructor(token: string) {
@@ -6,4 +6,4 @@ export class JwtResponse {
     }
 }
 
-export default JwtResponse;
+export default LoginResponse;

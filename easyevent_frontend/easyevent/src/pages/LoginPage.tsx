@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import LoginRequest from "../models/dto/LoginRequest";
 import { Link as RouterLink } from "react-router-dom";
+import LoginResponse from "../models/dto/LoginResponse";
 
 export default function LoginPage() {
   const {login} = useAuth();
@@ -37,7 +38,8 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
-      login(data.token);
+      const input = new LoginResponse(data.token);
+      login(input);
       
       navigate("/", {replace: true});
     } catch (err) {

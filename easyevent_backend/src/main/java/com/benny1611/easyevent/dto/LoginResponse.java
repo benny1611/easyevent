@@ -3,10 +3,10 @@ package com.benny1611.easyevent.dto;
 import lombok.Data;
 
 @Data
-public class JwtResponse {
+public class LoginResponse {
     private String token;
 
-    public JwtResponse(String token) {
+    public LoginResponse(String token) {
         this.token = token;
     }
 }

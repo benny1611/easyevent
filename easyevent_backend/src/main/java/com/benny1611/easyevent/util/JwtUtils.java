@@ -36,6 +36,8 @@ public class JwtUtils {
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .claim("roles", roles)
+                .claim("profilePictureUrl", user.getProfilePictureUrl())
+                .claim("username", user.getName())
                 .signWith(key)
                 .compact();
     }
