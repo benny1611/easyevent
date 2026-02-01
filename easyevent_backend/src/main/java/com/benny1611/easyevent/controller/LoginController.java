@@ -56,7 +56,7 @@ public class LoginController {
             String token;
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
-                token = jwtUtils.generateToken(authentication.getName(), user);
+                token = jwtUtils.generateToken(user);
                 return ResponseEntity.ok(new LoginResponse(token));
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

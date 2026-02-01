@@ -4,6 +4,7 @@ import CreateUserRequest from "../models/dto/CreateUserRequest";
 import { ENV } from "../config/env";
 import { PhotoCamera } from "@mui/icons-material";
 import { useI18n } from "../i18n/i18nContext";
+import { useNavigate } from "react-router-dom";
 
 interface RegistrationFormState {
     name: string;
@@ -15,6 +16,7 @@ interface RegistrationFormState {
 
 const RegisterPage: React.FC = () => {
     const { translation } = useI18n();
+    const navigate = useNavigate();
 
     const [form, setForm] = useState<RegistrationFormState>({
         name: "",
@@ -25,6 +27,7 @@ const RegisterPage: React.FC = () => {
     
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleChange = (field: keyof RegistrationFormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,9 +94,14 @@ const RegisterPage: React.FC = () => {
                 throw new Error(text || translation.register.registration_failed);
             }
 
-            alert("YAAAY"); // TODO: Change to redirect to home
+            setSuccess(true);
+            setTimeout(() => {
+                setSuccess(false);
+                navigate("/");
+            }, 2000);
         } catch (err: any) {
             setError(err.message ?? "Something went wrong");
+            setSuccess(false);
         } finally {
             setLoading(false);
         }
@@ -119,6 +127,7 @@ const RegisterPage: React.FC = () => {
             </Typography>
 
             {error && <Alert severity="error">{error}</Alert>}
+            {success && <Alert severity="success">{translation.register.registration_successful}</Alert>}
 
             <Box display="flex" justifyContent="center">
                 <Stack>

@@ -73,6 +73,7 @@ const en = {
         creating_account: "Creating account",
         pws_don_t_match: "Passwords do not match",
         registration_failed: "Registration failed",
+        registration_successful: "Registration successful",
     }
 };
 

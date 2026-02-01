@@ -24,8 +24,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping
-    @RequestMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<User> createUser(@Valid @ModelAttribute CreateUserRequest request,
                                            @RequestPart(required = false) MultipartFile profilePicture) throws IOException {
         User user = userService.createUser(request, profilePicture);

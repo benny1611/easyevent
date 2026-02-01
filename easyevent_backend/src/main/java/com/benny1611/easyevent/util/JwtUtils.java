@@ -29,7 +29,8 @@ public class JwtUtils {
     private final SecretKey key = Jwts.SIG.HS256.key().build();
     private final long expiration = TimeUnit.HOURS.toMillis(12);
 
-    public String generateToken(String username, User user) {
+    public String generateToken(User user) {
+        String username = user.getEmail();
         List<String> roles = user.getRoles().stream().map(Role::getName).toList();
         return Jwts.builder()
                 .subject(username)

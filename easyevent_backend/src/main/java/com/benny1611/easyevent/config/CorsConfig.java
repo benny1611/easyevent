@@ -13,13 +13,13 @@ import java.util.List;
 public class CorsConfig {
 
     @Value("${frontend.url}")
-    private List<String> allowedOrigins;
+    private String allowedOrigins;
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedOrigins(List.of(allowedOrigins));
         config.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "DELETE"
         ));

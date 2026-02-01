@@ -14,33 +14,27 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
 @Service
 public class UserService {
-
-    private static final int MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-    private static final Path UPLOAD_ROOT = Paths.get("uploads/users");
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final ProfileImageService profileImageService;
 
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, ProfileImageService profileImageService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
+        this.profileImageService = profileImageService;
     }
 
     @Transactional
@@ -73,50 +67,47 @@ public class UserService {
         user = userRepository.save(user);
 
         if (profilePicture != null && !profilePicture.isEmpty()) {
-            validateImage(profilePicture);
+            String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
 
-            Path userDir = UPLOAD_ROOT.resolve(String.valueOf(user.getId()));
-            Files.createDirectories(userDir);
-
-            Path avatarPath = userDir.resolve("avatar.png");
-
-            saveAsPng(profilePicture, avatarPath);
-
-            user.setProfilePictureUrl("/users/" + user.getId() + "/avatar.png");
+            user.setProfilePictureUrl(profilePicUrl);
             user = userRepository.save(user);
         }
 
         return user;
     }
 
-    private static void validateImage(MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("Empty file");
-        }
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("Max file size is 5MB");
+    @Transactional
+    public User createUser(String email, String name, String pictureUrl) throws IOException {
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(null);
+        Role role = roleRepository.findByName("ROLE_USER").get();
+        user.setRoles(Set.of(role));
+
+        user = userRepository.save(user);
+
+        byte[] profilePicData;
+        try {
+            profilePicData = ProfileImageService.downloadImage(pictureUrl);
+        } catch (IOException | InterruptedException | RuntimeException e) {
+            profilePicData = null;
         }
 
-        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
-            throw new IllegalArgumentException("File must be an image");
+        String profilePicUrl = null;
+        if (profilePicData != null) {
+            profilePicUrl = profileImageService.saveAsPng(profilePicData, user.getId());
+        }
+        if (profilePicUrl != null) {
+            user.setProfilePictureUrl(profilePicUrl);
+            user = userRepository.save(user);
         }
 
-        BufferedImage image = ImageIO.read(file.getInputStream());
-        if (image == null) {
-            throw new IllegalArgumentException("Invalid or corrupted image");
-        }
+        return user;
     }
 
-    private static void saveAsPng(MultipartFile file, Path outputPath) throws IOException {
-        BufferedImage image = ImageIO.read(file.getInputStream());
-        if (image == null) {
-            throw new IllegalArgumentException("Corrupted PNG file");
-        }
-
-        BufferedImage resized = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = resized.createGraphics();
-        g.drawImage(image, 0, 0, 256, 256, null);
-        g.dispose();
-        ImageIO.write(resized, "png", outputPath.toFile());
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
+
 }
