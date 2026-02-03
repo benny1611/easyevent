@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @Service
@@ -70,6 +71,9 @@ public class LoginService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             token = jwtUtils.generateToken(user);
+            OffsetDateTime now = OffsetDateTime.now();
+            user.setLastLoginAt(now);
+            userRepository.save(user);
         }
 
         return token;
