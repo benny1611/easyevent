@@ -22,7 +22,7 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuthCodeService codeService;
 
-    @Value("${frontend.url}")
+    @Value("${app.frontend.url}")
     private String frontendUrl;
 
     public OAuthSuccessHandler(UserService userService, OAuthCodeService codeService) {
