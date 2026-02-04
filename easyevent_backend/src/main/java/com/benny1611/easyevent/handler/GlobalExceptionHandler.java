@@ -1,6 +1,7 @@
 package com.benny1611.easyevent.handler;
 
 import com.benny1611.easyevent.dto.ApiError;
+import com.benny1611.easyevent.util.exception.BlockedUserException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -63,5 +64,17 @@ public class GlobalExceptionHandler {
                 request.getRequestURI());
 
         return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(BlockedUserException.class)
+    public ResponseEntity<ApiError> handleBlockedUserErrors(BlockedUserException ex, HttpServletRequest request) {
+        ApiError error = new ApiError(HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
+                "BLOCKED",
+                request.getRequestURI());
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(error);
     }
 }
