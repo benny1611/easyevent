@@ -64,7 +64,7 @@ public class LoginService {
                 }
                 userRepository.save(user);
             }
-            return null;
+            throw ex;
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
