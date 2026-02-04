@@ -14,6 +14,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState(false);
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string|null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      if (emailError) {
+        const msg = {
+          message: "EMAIL_WRONG"
+        }
+        throw new Error(JSON.stringify(msg));
+      }
+
       const apiEndpoint = `${ENV.API_BASE_URL}/auth/login`;
       const response = await fetch(apiEndpoint, {
         method: "POST",
@@ -42,8 +51,32 @@ export default function LoginPage() {
       login(input);
       
       navigate("/", {replace: true});
-    } catch (err) {
-      setError(err instanceof Error ? err.message : translation.login.login_failed);
+    } catch (err: any) {
+      if(!navigator.onLine) {
+        setError(translation.login.no_internet);
+      } else {
+        try {
+          const errorJSON = JSON.parse(err.message);
+          switch(errorJSON.message) {
+            case "BAD_CREDENTIALS":
+              setError(translation.login.invalid_credentials);
+              break;
+            case "BLOCKED":
+              setError(translation.login.blocked);
+              break;
+            case "USER_NOT_FOUND":
+              setError(translation.login.user_not_found);
+              break;
+            case "EMAIL_WRONG":
+              setError(translation.login.email_wrong);
+              break;
+            default:
+              setError(translation.login.something_went_wrong);
+          }
+        } catch(e) {
+          setError(translation.login.server_unreachable);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -66,7 +99,16 @@ export default function LoginPage() {
 
             {error && <Alert severity="error">{error}</Alert>}
 
-            <TextField label={translation.login.email} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            <TextField label={translation.login.email} value={email} onChange={
+              (e) => {
+                const value = e.target.value;
+                setEmail(value);
+                setEmailError(value !== "" && !isValidEmail(value));
+              }
+            } 
+            error={emailError}
+            autoComplete="email" />
+
             <TextField 
             label={translation.login.password} 
             type="password" 

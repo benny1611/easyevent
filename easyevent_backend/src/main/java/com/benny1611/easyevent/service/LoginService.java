@@ -7,6 +7,8 @@ import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
 import com.benny1611.easyevent.util.JwtUtils;
 import com.benny1611.easyevent.util.exception.BlockedUserException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,11 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
 public class LoginService {
+
+    private static Logger LOG = LoggerFactory.getLogger(LoginService.class);
 
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
@@ -42,11 +45,19 @@ public class LoginService {
         this.maxFailedPWAttempts = maxFailedPWAttempts;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = AuthenticationException.class)
     public String login(LoginRequest request) {
         Authentication authentication;
-        Optional<User> userOptional = userRepository.findByEmailWithRolesAndState(request.getEmail());
+        User user = userRepository.findByEmailWithRolesAndState(request.getEmail()).orElseThrow(() -> new IllegalArgumentException("USER_NOT_FOUND"));
+
+        // Check if the user is blocked
         UserState blockedState = userStateRepository.findByName("BLOCKED").orElseThrow(() -> new RuntimeException("Could not find the BLOCKED state"));
+        UserState userState = user.getState();
+        if (userState.getId().intValue() == blockedState.getId().intValue()) {
+            throw new BlockedUserException(null);
+        }
+
+        // Check the credentials
         try {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -55,32 +66,20 @@ public class LoginService {
                     )
             );
         } catch (AuthenticationException ex) {
-            if (userOptional.isPresent()) {
-                User user = userOptional.get();
-                user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
-                int failedAttempts = user.getFailedLoginAttempts();
-                if (failedAttempts >= maxFailedPWAttempts) {
-                    user.setState(blockedState);
-                }
-                userRepository.save(user);
+            user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
+            int failedAttempts = user.getFailedLoginAttempts();
+            if (failedAttempts >= maxFailedPWAttempts) {
+                user.setState(blockedState);
             }
+            userRepository.save(user);
             throw ex;
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String token = null;
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            UserState userState = user.getState();
-            if (userState.getId().intValue() == blockedState.getId().intValue()) {
-                throw new BlockedUserException(null);
-            }
-            token = jwtUtils.generateToken(user);
-            OffsetDateTime now = OffsetDateTime.now();
-            user.setLastLoginAt(now);
-            userRepository.save(user);
-        }
+        String token = jwtUtils.generateToken(user);
+        OffsetDateTime now = OffsetDateTime.now();
+        user.setLastLoginAt(now);
+        userRepository.save(user);
 
         return token;
     }
