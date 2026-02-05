@@ -30,7 +30,31 @@ const RegisterPage: React.FC = () => {
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    const [nameError, setNameError] = useState(false);
+    const [nameTouched, setNameTouched] = useState(false);
+    const [emailError, setEmailError] = useState(false);
+    const [emailTouched, setEmailTouched] = useState(false);
+    const [passwordError, setPasswordError] = useState(false);
+    const [passwordTouched, setPasswordTouched] = useState(false);
+    const [repeatPasswordError, setRepeatPasswordError] = useState(false);
+    const [repeatPasswordTouched, setRepeatPasswordTouched] = useState(false);
+
     const handleChange = (field: keyof RegistrationFormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        switch(field) {
+            case "email":
+                setEmailError(!isValidEmail(event.target.value));
+                break;
+            case "name":
+                setNameError(!isValidName(event.target.value));
+                break;
+            case "password":
+                setPasswordError(!isValidPassword(event.target.value));
+                break;
+            case "repeatPassword":
+                console.log("pass: " + form.password + " repeat: " + event.target.value);
+                setRepeatPasswordError(!isRepeatPasswordEquals(event.target.value));
+                break;
+        }
         setForm((prev) => ({
             ...prev,
             [field]: event.target.value,
@@ -53,6 +77,31 @@ const RegisterPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        const nameHasError = form.name.trim() === "";
+        const emailHasError = form.email.trim() === "";
+        const passwordHasError = form.password.trim() === "";
+        const repeatPasswordHasError = form.repeatPassword.trim() === "";
+
+        setNameTouched(true);
+        setEmailTouched(true);
+        setPasswordTouched(true);
+        setRepeatPasswordTouched(true);
+
+        setNameError(nameHasError);
+        setEmailError(emailHasError);
+        setPasswordError(passwordHasError);
+        setRepeatPasswordError(repeatPasswordHasError);
+
+        if (
+            nameHasError ||
+            emailHasError ||
+            passwordHasError ||
+            repeatPasswordHasError
+        ) {
+            setError(translation.register.something_went_wrong);
+            return;
+        }
 
         if(form.password !== form.repeatPassword) {
             setError(translation.register.pws_don_t_match);
@@ -107,10 +156,18 @@ const RegisterPage: React.FC = () => {
         }
     };
 
+    const isValidName = (name: string) => name.trim() !== "";
+
+    const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    const isValidPassword = (pass: string) => /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(pass);
+
+    const isRepeatPasswordEquals = (rep: string) => form.password === rep;
 
     return (
         <Box
             component="form"
+            noValidate
             onSubmit={handleSubmit}
             maxWidth={600}
             width="100%"
@@ -151,13 +208,25 @@ const RegisterPage: React.FC = () => {
 
             <TextField
                 label={translation.register.name}
+                onBlur={() => {
+                    setNameTouched(true); 
+                    setNameError(!isValidName(form.name))
+                }}
+                error={nameTouched && nameError}
                 required
                 value={form.name}
                 fullWidth
+                helperText={nameTouched && nameError ? translation.register.name_required : ""}
                 onChange={handleChange("name")}/>
             
             <TextField
                 label={translation.register.email}
+                onBlur={() => {
+                    setEmailTouched(true);
+                    setEmailError(!isValidEmail(form.email));
+                }}
+                error={emailTouched && emailError}
+                helperText={emailTouched && emailError ? translation.register.email_required : ""}
                 type="email"
                 required
                 value={form.email}
@@ -166,6 +235,12 @@ const RegisterPage: React.FC = () => {
 
             <TextField
                 label={translation.register.password}
+                onBlur={() => {
+                    setPasswordTouched(true);
+                    setPasswordError(!isValidPassword(form.password));
+                }}
+                error={passwordTouched && passwordError}
+                helperText={passwordTouched && passwordError ? translation.register.pass_form : ""}
                 type="password"
                 required
                 value={form.password}
@@ -174,6 +249,12 @@ const RegisterPage: React.FC = () => {
             
             <TextField
                 label={translation.register.repeat_password}
+                onFocus={() => {
+                    setRepeatPasswordTouched(true);
+                    setRepeatPasswordError(!isRepeatPasswordEquals(form.repeatPassword));
+                }}
+                error={repeatPasswordTouched && repeatPasswordError}
+                helperText={repeatPasswordTouched && repeatPasswordError ? translation.register.repeat_pass_helper : ""}
                 type="password"
                 required
                 value={form.repeatPassword}

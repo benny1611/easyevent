@@ -79,6 +79,11 @@ const en = {
         pws_don_t_match: "Passwords do not match",
         registration_failed: "Registration failed",
         registration_successful: "Registration successful",
+        name_required: "Name is required",
+        email_required: "Email is required",
+        pass_form: "Minimum eight characters, at least one letter, one number and one special character",
+        repeat_pass_helper: "Passwords must match",
+        something_went_wrong: "Something went wrong",
     }
 };
 
