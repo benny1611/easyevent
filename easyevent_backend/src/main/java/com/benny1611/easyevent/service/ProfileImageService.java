@@ -38,7 +38,7 @@ public class ProfileImageService {
         }
 
         if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
-            throw new IllegalArgumentException("File must be an image");
+            throw new IllegalArgumentException("File must be an image. Actual content type: " + file.getContentType());
         }
 
         BufferedImage image = ImageIO.read(file.getInputStream());
@@ -65,7 +65,8 @@ public class ProfileImageService {
     }
 
     public String saveAsPng(byte[] imageBytes, Long id) throws IOException {
-        MultipartFile file = new ByteArrayMultipartFile(imageBytes);
+        ByteArrayMultipartFile file = new ByteArrayMultipartFile(imageBytes);
+        file.setContentType("image/png");
         return saveAsPng(file, id);
     }
 

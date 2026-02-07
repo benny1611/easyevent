@@ -7,8 +7,6 @@ import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
 import com.benny1611.easyevent.util.JwtUtils;
 import com.benny1611.easyevent.util.exception.BlockedUserException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,13 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
 
 @Service
 public class LoginService {
-
-    private static Logger LOG = LoggerFactory.getLogger(LoginService.class);
-
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;

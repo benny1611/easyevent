@@ -132,6 +132,14 @@ export default function LoginPage() {
             }}>
               {translation.login.login}
             </Button>
+            <Button 
+            variant="outlined" 
+            fullWidth 
+            onClick={() => {
+               window.location.href = `${ENV.BARE_URL_BASE}/oauth2/authorization/google`; 
+               }} > 
+               Continue with Google 
+               </Button>
             <Typography variant="subtitle2" textAlign="left">
               {translation.login.no_account} <Link component={RouterLink} to="/register">{translation.login.sign_in}</Link>
             </Typography>

@@ -2,9 +2,13 @@ package com.benny1611.easyevent.service;
 
 import com.benny1611.easyevent.dao.RoleRepository;
 import com.benny1611.easyevent.dao.UserRepository;
+import com.benny1611.easyevent.dao.UserStateRepository;
 import com.benny1611.easyevent.dto.CreateUserRequest;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
+import com.benny1611.easyevent.entity.UserState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,18 +27,26 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final ProfileImageService profileImageService;
+    private final UserStateRepository userStateRepository;
 
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, ProfileImageService profileImageService) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       RoleRepository roleRepository,
+                       ProfileImageService profileImageService,
+                       UserStateRepository userStateRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
         this.profileImageService = profileImageService;
+        this.userStateRepository = userStateRepository;
     }
 
     @Transactional
@@ -64,6 +76,9 @@ public class UserService {
             throw new AccessDeniedException("You can't perform that operation");
         }
 
+        UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find active state"));
+        user.setState(activeState);
+
         user = userRepository.save(user);
 
         if (profilePicture != null && !profilePicture.isEmpty()) {
@@ -82,13 +97,16 @@ public class UserService {
         user.setName(name);
         user.setEmail(email);
         user.setPassword(null);
-        Role role = roleRepository.findByName("ROLE_USER").get();
+        Role role = roleRepository.findByName("ROLE_USER").orElseThrow(() -> new RuntimeException("Could not find the user role"));
         user.setRoles(Set.of(role));
+        UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find active state"));
+        user.setState(activeState);
 
         user = userRepository.save(user);
 
         byte[] profilePicData;
         try {
+            LOG.info("Profile pic URL: {}", pictureUrl);
             profilePicData = ProfileImageService.downloadImage(pictureUrl);
         } catch (IOException | InterruptedException | RuntimeException e) {
             profilePicData = null;
@@ -108,6 +126,11 @@ public class UserService {
 
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    public Optional<User> findByEmailWithRoles(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("Could not find user: " + id));
+        return userRepository.findByEmailWithRoles(user.getEmail());
     }
 
 }

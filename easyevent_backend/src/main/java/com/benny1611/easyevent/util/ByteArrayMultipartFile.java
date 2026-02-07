@@ -1,5 +1,6 @@
 package com.benny1611.easyevent.util;
 
+import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -8,6 +9,8 @@ import java.io.*;
 public class ByteArrayMultipartFile implements MultipartFile {
 
     private final byte[] content;
+    @Setter
+    private String contentType;
 
     public ByteArrayMultipartFile(byte[] content) {
         this.content = content;
@@ -26,7 +29,7 @@ public class ByteArrayMultipartFile implements MultipartFile {
 
     @Override
     public @Nullable String getContentType() {
-        return null;
+        return this.contentType;
     }
 
     @Override

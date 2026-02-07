@@ -17,11 +17,11 @@ public class OAuthCodeService {
     private final Duration TTL;
 
     private class Entry {
-        final User user;
+        final Long userId;
         final Instant expiresAt;
 
-        private Entry(User user) {
-            this.user = user;
+        private Entry(Long userId) {
+            this.userId = userId;
             this.expiresAt = Instant.now().plus(TTL);
         }
     }
@@ -34,17 +34,17 @@ public class OAuthCodeService {
 
     public String create(User user) {
         String code = UUID.randomUUID().toString();
-        store.put(code, new Entry(user));
+        store.put(code, new Entry(user.getId()));
         return code;
     }
 
-    public User consume(String code) {
+    public Long consume(String code) {
         Entry entry = store.remove(code);
 
         if (entry == null || entry.expiresAt.isBefore(Instant.now())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired OAuth code");
         }
 
-        return entry.user;
+        return entry.userId;
     }
 }

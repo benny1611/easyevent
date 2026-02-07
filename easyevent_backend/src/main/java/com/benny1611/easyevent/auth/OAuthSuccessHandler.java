@@ -3,7 +3,6 @@ package com.benny1611.easyevent.auth;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.service.OAuthCodeService;
 import com.benny1611.easyevent.service.UserService;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +33,7 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(
             HttpServletRequest request,
             HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
+            Authentication authentication) throws IOException {
 
         OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
 
