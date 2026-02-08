@@ -32,7 +32,7 @@ public class OAuthController {
     @PostMapping("/exchange")
     public ResponseEntity<LoginResponse> exchange(@Valid @RequestBody OauthCodeRequest request) {
         Long userID = codeService.consume(request.getCode());
-        User user = userService.findByEmailWithRoles(userID).orElseThrow(() -> new RuntimeException("Could not find user: " + userID));
+        User user = userService.findByIdWithRoles(userID).orElseThrow(() -> new RuntimeException("Could not find user: " + userID));
         String token = jwtUtils.generateToken(user);
         return ResponseEntity.ok(new LoginResponse(token));
     }

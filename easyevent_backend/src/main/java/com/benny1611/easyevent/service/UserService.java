@@ -128,9 +128,8 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-    public Optional<User> findByEmailWithRoles(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("Could not find user: " + id));
-        return userRepository.findByEmailWithRoles(user.getEmail());
+    public Optional<User> findByIdWithRoles(Long id) {
+        return userRepository.findByIdWithRoles(id);
     }
 
 }
