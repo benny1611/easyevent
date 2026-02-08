@@ -143,16 +143,6 @@ export default function LoginPage() {
                 {translation.login.continue_with}
                 <GoogleIcon sx={{ml: 2}}></GoogleIcon>
             </Button>
-            <Button 
-              variant="outlined" 
-              fullWidth
-              sx={{ ':not(style)': { marginTop: '.5rem !important' } }}
-              onClick={() => {
-                window.location.href = `${ENV.BARE_URL_BASE}/oauth2/authorization/microsoft`; 
-                }} > 
-                {translation.login.continue_with}
-                <MicrosoftIcon sx={{ml: 2}}></MicrosoftIcon>
-            </Button>
             <Typography variant="subtitle2" textAlign="left">
               {translation.login.no_account} <Link component={RouterLink} to="/register">{translation.login.sign_in}</Link>
             </Typography>
