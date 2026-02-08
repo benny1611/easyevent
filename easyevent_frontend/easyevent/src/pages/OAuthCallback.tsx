@@ -3,7 +3,7 @@ import { ENV } from "../config/env";
 import LoginResponse from "../models/dto/LoginResponse";
 import { useAuth } from "../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Box, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import { useI18n } from "../i18n/i18nContext";
 
 const OAuthCallback = () => {
@@ -31,12 +31,21 @@ const OAuthCallback = () => {
     });
 
     return (
-    <Box sx={{
-        flex: 1,
-        display: "flex"
-      }}>
-        <Typography>{translation.login.signing_in}</Typography>
-      </Box>
+        <Box
+            sx={{
+                minHeight: "100vh",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 2,
+            }}
+        >
+            <CircularProgress />
+            <Typography color="text.secondary">
+                {translation.login.signing_in}
+            </Typography>
+        </Box>
     );
 }
 
