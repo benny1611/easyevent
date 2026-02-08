@@ -8,6 +8,7 @@ import LoginRequest from "../models/dto/LoginRequest";
 import { Link as RouterLink } from "react-router-dom";
 import LoginResponse from "../models/dto/LoginResponse";
 import GoogleIcon from '@mui/icons-material/Google';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
 
 export default function LoginPage() {
   const {login} = useAuth();
@@ -134,14 +135,23 @@ export default function LoginPage() {
               {translation.login.login}
             </Button>
             <Button 
-            variant="outlined" 
-            fullWidth 
-            onClick={() => {
-               window.location.href = `${ENV.BARE_URL_BASE}/oauth2/authorization/google`; 
-               }} > 
-               {translation.login.continue_with}
-               <GoogleIcon></GoogleIcon>
-               </Button>
+              variant="outlined" 
+              fullWidth 
+              onClick={() => {
+                window.location.href = `${ENV.BARE_URL_BASE}/oauth2/authorization/google`; 
+                }} > 
+                {translation.login.continue_with}
+                <GoogleIcon sx={{ml: 2}}></GoogleIcon>
+            </Button>
+            <Button 
+              variant="outlined" 
+              fullWidth 
+              onClick={() => {
+                window.location.href = `${ENV.BARE_URL_BASE}/oauth2/authorization/microsoft`; 
+                }} > 
+                {translation.login.continue_with}
+                <MicrosoftIcon sx={{ml: 2}}></MicrosoftIcon>
+            </Button>
             <Typography variant="subtitle2" textAlign="left">
               {translation.login.no_account} <Link component={RouterLink} to="/register">{translation.login.sign_in}</Link>
             </Typography>
