@@ -9,6 +9,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,7 +28,11 @@ public class JwtUtils {
     private static final Logger LOG = LoggerFactory.getLogger(JwtUtils.class);
 
     private final SecretKey key = Jwts.SIG.HS256.key().build();
-    private final long expiration = TimeUnit.HOURS.toMillis(12);
+    private final long expiration;
+
+    public JwtUtils (@Value("${app.security.tokenDurationInHours}") int tokenDurationInHours) {
+        expiration = TimeUnit.HOURS.toMillis(tokenDurationInHours);
+    }
 
     public String generateToken(User user) {
         String username = user.getEmail();
