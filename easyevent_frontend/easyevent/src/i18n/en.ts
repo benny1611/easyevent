@@ -66,7 +66,9 @@ const en = {
         server_unreachable: "Server unreachable",
         no_account: "Don't have an account?",
         sign_in: "Sign in",
-        email_wrong: "Please enter a valid email address"
+        email_wrong: "Please enter a valid email address",
+        continue_with: "Continue with",
+        signing_in: "Signing you in ...",
     },
     register: {
         create_account: "Create Account",

@@ -11,7 +11,7 @@ function App() {
   return (
     <>
       <CssBaseline />
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', flex: 1 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', flexGrow: 1 }}>
         <ResponsiveAppBar />
         <Toolbar />
         <Routes>
@@ -20,8 +20,8 @@ function App() {
           <Route path='/register' element={<RegisterPage />} />
           <Route path="/oauth2/callback" element={<OAuthCallback />} />
         </Routes>
-        <Footer />
       </Box>
+      <Footer />
     </>
   )
 }

@@ -7,6 +7,7 @@ import { useState } from "react";
 import LoginRequest from "../models/dto/LoginRequest";
 import { Link as RouterLink } from "react-router-dom";
 import LoginResponse from "../models/dto/LoginResponse";
+import GoogleIcon from '@mui/icons-material/Google';
 
 export default function LoginPage() {
   const {login} = useAuth();
@@ -138,7 +139,8 @@ export default function LoginPage() {
             onClick={() => {
                window.location.href = `${ENV.BARE_URL_BASE}/oauth2/authorization/google`; 
                }} > 
-               Continue with Google 
+               {translation.login.continue_with}
+               <GoogleIcon></GoogleIcon>
                </Button>
             <Typography variant="subtitle2" textAlign="left">
               {translation.login.no_account} <Link component={RouterLink} to="/register">{translation.login.sign_in}</Link>
