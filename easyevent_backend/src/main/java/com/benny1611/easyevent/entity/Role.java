@@ -3,9 +3,6 @@ package com.benny1611.easyevent.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Entity
 @Table(name = "roles")
 @Data

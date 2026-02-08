@@ -1,7 +1,5 @@
 package com.benny1611.easyevent.util;
 
-import com.benny1611.easyevent.dao.RoleRepository;
-import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -12,14 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Component
