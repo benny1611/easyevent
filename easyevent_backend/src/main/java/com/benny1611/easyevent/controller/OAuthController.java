@@ -4,6 +4,7 @@ import com.benny1611.easyevent.dto.LoginResponse;
 import com.benny1611.easyevent.dto.OauthCodeRequest;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.service.OAuthCodeService;
+import com.benny1611.easyevent.service.OAuthService;
 import com.benny1611.easyevent.service.UserService;
 import com.benny1611.easyevent.util.JwtUtils;
 import jakarta.validation.Valid;
@@ -18,22 +19,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth/oauth")
 public class OAuthController {
 
-    private final OAuthCodeService codeService;
-    private final UserService userService;
-    private final JwtUtils jwtUtils;
+    private final OAuthService oAuthService;
 
     @Autowired
-    public OAuthController(OAuthCodeService codeService, UserService userService, JwtUtils jwtUtils) {
-        this.codeService = codeService;
-        this.userService = userService;
-        this.jwtUtils = jwtUtils;
+    public OAuthController(OAuthService oAuthService) {
+        this.oAuthService = oAuthService;
     }
 
     @PostMapping("/exchange")
     public ResponseEntity<LoginResponse> exchange(@Valid @RequestBody OauthCodeRequest request) {
-        Long userID = codeService.consume(request.getCode());
-        User user = userService.findByIdWithRoles(userID).orElseThrow(() -> new RuntimeException("Could not find user: " + userID));
-        String token = jwtUtils.generateToken(user);
+        String token = oAuthService.exchange(request);
         return ResponseEntity.ok(new LoginResponse(token));
     }
 }

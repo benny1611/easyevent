@@ -145,6 +145,9 @@ export default function LoginPage() {
             <Typography variant="subtitle2" textAlign="left">
               {translation.login.no_account} <Link component={RouterLink} to="/register">{translation.login.sign_in}</Link>
             </Typography>
+            <Typography variant="subtitle2" textAlign="left" sx={{ ':not(style)': { marginTop: '0 !important' } }}>
+              {translation.login.forgot} <Link component={RouterLink} to="/reset">{translation.login.reset}</Link>
+            </Typography>
           </Stack>
         </Container>
       </Box>
