@@ -145,7 +145,8 @@ export default function LoginPage() {
             </Button>
             <Button 
               variant="outlined" 
-              fullWidth 
+              fullWidth
+              sx={{ ':not(style)': { marginTop: '.5rem !important' } }}
               onClick={() => {
                 window.location.href = `${ENV.BARE_URL_BASE}/oauth2/authorization/microsoft`; 
                 }} > 
