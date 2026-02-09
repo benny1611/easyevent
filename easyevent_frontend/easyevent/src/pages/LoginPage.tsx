@@ -8,7 +8,6 @@ import LoginRequest from "../models/dto/LoginRequest";
 import { Link as RouterLink } from "react-router-dom";
 import LoginResponse from "../models/dto/LoginResponse";
 import GoogleIcon from '@mui/icons-material/Google';
-import MicrosoftIcon from '@mui/icons-material/Microsoft';
 
 export default function LoginPage() {
   const {login} = useAuth();

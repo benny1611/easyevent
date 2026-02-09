@@ -36,6 +36,9 @@ public class User {
     @Column(name = "failed_login_attempts", nullable = false)
     private int failedLoginAttempts = 0;
 
+    @Column(name = "language", length = 5)
+    private String language;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "state_id")
     private UserState state;
