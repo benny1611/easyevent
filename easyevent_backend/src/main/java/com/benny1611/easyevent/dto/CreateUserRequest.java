@@ -1,5 +1,6 @@
 package com.benny1611.easyevent.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -11,6 +12,7 @@ public class CreateUserRequest {
     @NotBlank(message = "name must not be empty")
     private String name;
 
+    @Email
     @NotBlank(message = "email must not be empty")
     private String email;
 
