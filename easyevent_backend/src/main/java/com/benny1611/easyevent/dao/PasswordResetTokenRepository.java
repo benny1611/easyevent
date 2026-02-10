@@ -8,17 +8,22 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, UUID> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
-            SELECT t FROM PasswordResetToken t
-            WHERE t.used = false
-            AND t.expiresAt > :now
-            """)
-    List<PasswordResetToken> findValidTokensForUpdate(Instant now);
+        SELECT t FROM PasswordResetToken t
+        WHERE t.id = :id
+          AND t.used = false
+          AND t.expiresAt > :now
+    """)
+    Optional<PasswordResetToken> findForUpdate(
+            UUID id,
+            Instant now
+    );
 
     List<PasswordResetToken> findByUsedFalseAndExpiresAtAfter(Instant now);
 }

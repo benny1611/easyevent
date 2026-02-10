@@ -55,15 +55,18 @@ public class PasswordResetService {
                         t.setUsed(true);
                         tokenRepository.save(t);
                     });
-            String rawToken = UUID.randomUUID() + "-" + UUID.randomUUID();
+            UUID tokenId = UUID.randomUUID();
+            String secret = UUID.randomUUID() + "-" + UUID.randomUUID();
 
             PasswordResetToken token = new PasswordResetToken();
-            token.setUser(user);
-            token.setTokenHash(passwordEncoder.encode(rawToken));
+            token.setId(tokenId);
+            token.setTokenHash(passwordEncoder.encode(secret));
             token.setExpiresAt(Instant.now().plus(expiryMinutes, ChronoUnit.MINUTES));
+            token.setUser(user);
+
             tokenRepository.save(token);
 
-            String resetLink = frontendUrl + "/reset-password?token=" + rawToken;
+            String resetLink = frontendUrl + "/reset-password?id=" + tokenId + "&token=" + secret;
             mailService.sendPasswordResetEmail(user, resetLink, expiryMinutes);
         });
 
@@ -71,13 +74,15 @@ public class PasswordResetService {
     }
 
     @Transactional
-    public void resetPassword(String rawToken, String newPassword) {
+    public void resetPassword(UUID tokenId, String secret, String newPassword) {
         PasswordResetToken token = tokenRepository
-                .findValidTokensForUpdate(Instant.now())
-                .stream()
-                .filter(t -> passwordEncoder.matches(rawToken, t.getTokenHash()))
-                .findFirst()
+                .findForUpdate(tokenId, Instant.now())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
+        boolean isTokenMatching = passwordEncoder.matches(secret, token.getTokenHash());
+        if (!isTokenMatching) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid token");
+        }
+
         UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find the ACTIVE state"));
 
         User user = token.getUser();

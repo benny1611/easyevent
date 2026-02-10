@@ -18,7 +18,8 @@ public class PasswordResetToken {
     @Column(name = "token_hash",  nullable = false)
     private String tokenHash;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "expires_at", nullable = false)

@@ -28,7 +28,7 @@ public class PasswordResetController {
 
     @PostMapping("/confirm")
     public ResponseEntity<Void> confirmReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
-        passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+        passwordResetService.resetPassword(request.getTokenId(), request.getSecret(), request.getNewPassword());
         return ResponseEntity.ok().build();
     }
 }
