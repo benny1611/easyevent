@@ -57,7 +57,8 @@ public class SecurityConfig {
                                 "/users/**",
                                 "/login/oauth2/**",
                                 "/api/auth/login",
-                                "/api/registrations/event/**").permitAll()
+                                "/api/registrations/event/**",
+                                "/api/auth/password-reset/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth.successHandler(oAuthSuccessHandler))
