@@ -59,8 +59,6 @@ const en = {
         email: "Email",
         password: "Password",
         invalid_credentials: "Email or password wrong",
-        blocked: "You have been blocked, please reset your password",
-        user_not_found: "User not found",
         no_internet: "You are not connected, please connect to the internet",
         something_went_wrong: "Something went wrong",
         server_unreachable: "Server unreachable",

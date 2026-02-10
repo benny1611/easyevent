@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @Service
 public class LoginService {
@@ -42,13 +43,19 @@ public class LoginService {
     @Transactional(noRollbackFor = AuthenticationException.class)
     public String login(LoginRequest request) {
         Authentication authentication;
-        User user = userRepository.findByEmailWithRolesAndState(request.getEmail()).orElseThrow(() -> new IllegalArgumentException("USER_NOT_FOUND"));
+        Optional<User> userOptional = userRepository.findByEmailWithRolesAndState(request.getEmail());
+        User user;
+        if (userOptional.isPresent()) {
+            user = userOptional.get();
+        } else {
+            return null;
+        }
 
         // Check if the user is blocked
         UserState blockedState = userStateRepository.findByName("BLOCKED").orElseThrow(() -> new RuntimeException("Could not find the BLOCKED state"));
         UserState userState = user.getState();
         if (userState.getId().intValue() == blockedState.getId().intValue()) {
-            throw new BlockedUserException(null);
+            return null;
         }
 
         // Check the credentials

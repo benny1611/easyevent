@@ -62,12 +62,6 @@ export default function LoginPage() {
             case "BAD_CREDENTIALS":
               setError(translation.login.invalid_credentials);
               break;
-            case "BLOCKED":
-              setError(translation.login.blocked);
-              break;
-            case "USER_NOT_FOUND":
-              setError(translation.login.user_not_found);
-              break;
             case "EMAIL_WRONG":
               setError(translation.login.email_wrong);
               break;
