@@ -4,6 +4,7 @@ import com.benny1611.easyevent.entity.PasswordResetToken;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
@@ -24,6 +25,14 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
             UUID id,
             Instant now
     );
+
+    @Modifying
+    @Query("""
+            DELETE FROM PasswordResetToken t
+            WHERE t.used = true
+            OR t.expiresAt < :now
+            """)
+    void deleteExpiredOrUsed(Instant now);
 
     List<PasswordResetToken> findByUsedFalseAndExpiresAtAfter(Instant now);
 }
