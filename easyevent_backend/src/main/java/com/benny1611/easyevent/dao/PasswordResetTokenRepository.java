@@ -1,6 +1,7 @@
 package com.benny1611.easyevent.dao;
 
 import com.benny1611.easyevent.entity.PasswordResetToken;
+import com.benny1611.easyevent.entity.User;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -34,5 +35,13 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
             """)
     void deleteExpiredOrUsed(Instant now);
 
-    List<PasswordResetToken> findByUsedFalseAndExpiresAtAfter(Instant now);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE PasswordResetToken t
+            SET t.used = true
+            WHERE t.user = :user
+            AND t.used = false
+            AND t.expiresAt > :now
+            """)
+    int invalidateActiveTokens(User user, Instant now);
 }

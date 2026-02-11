@@ -86,6 +86,13 @@ const en = {
         pass_form: "Minimum eight characters, at least one letter, one number and one special character",
         repeat_pass_helper: "Passwords must match",
         something_went_wrong: "Something went wrong",
+    },
+    forgot: {
+        error: "Something went wrong, please try again",
+        forgot_pw: "Forgot password",
+        success: "If the email exists, you will receive a reset link.",
+        email: "Email",
+        send: "Send reset link",
     }
 };
 

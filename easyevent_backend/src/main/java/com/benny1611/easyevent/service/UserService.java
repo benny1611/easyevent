@@ -10,6 +10,7 @@ import com.benny1611.easyevent.entity.UserState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,9 +39,9 @@ public class UserService {
 
     @Autowired
     public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
                        RoleRepository roleRepository,
                        ProfileImageService profileImageService,
+                       @Qualifier("bcryptPasswordEncoder") PasswordEncoder passwordEncoder,
                        UserStateRepository userStateRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;

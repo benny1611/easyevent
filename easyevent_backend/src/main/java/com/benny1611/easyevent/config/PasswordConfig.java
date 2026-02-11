@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 
 @Configuration
 public class PasswordConfig {
@@ -13,7 +14,12 @@ public class PasswordConfig {
     private int strength;
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public PasswordEncoder bcryptPasswordEncoder() {
         return new BCryptPasswordEncoder(strength);
+    }
+
+    @Bean
+    public PasswordEncoder sCryptPasswordEncoder() {
+        return new SCryptPasswordEncoder(65536, 8,1, 32, 16);
     }
 }

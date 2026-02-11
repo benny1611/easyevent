@@ -3,6 +3,7 @@ package com.benny1611.easyevent.config;
 import com.benny1611.easyevent.auth.OAuthSuccessHandler;
 import com.benny1611.easyevent.service.CustomUserDetailsService;
 import com.benny1611.easyevent.util.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -31,7 +32,8 @@ public class SecurityConfig {
     private final OAuthSuccessHandler oAuthSuccessHandler;
     private final PasswordEncoder passwordEncoder;
 
-    public SecurityConfig(CustomUserDetailsService customUserDetailsService, JwtAuthenticationFilter jwtFilter, OAuthSuccessHandler oAuthSuccessHandler, PasswordEncoder passwordEncoder) {
+    public SecurityConfig(CustomUserDetailsService customUserDetailsService, JwtAuthenticationFilter jwtFilter, OAuthSuccessHandler oAuthSuccessHandler,
+                          @Qualifier("bcryptPasswordEncoder") PasswordEncoder passwordEncoder) {
         this.customUserDetailsService = customUserDetailsService;
         this.jwtFilter = jwtFilter;
         this.oAuthSuccessHandler = oAuthSuccessHandler;

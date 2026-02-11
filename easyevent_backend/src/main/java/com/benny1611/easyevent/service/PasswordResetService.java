@@ -7,6 +7,7 @@ import com.benny1611.easyevent.entity.PasswordResetToken;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +21,6 @@ import java.util.UUID;
 
 @Service
 public class PasswordResetService {
-
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final UserStateRepository userStateRepository;
@@ -35,7 +35,7 @@ public class PasswordResetService {
     public PasswordResetService(UserRepository userRepository,
                                 PasswordResetTokenRepository tokenRepository,
                                 UserStateRepository userStateRepository,
-                                PasswordEncoder passwordEncoder,
+                                @Qualifier("sCryptPasswordEncoder") PasswordEncoder passwordEncoder,
                                 IMailService mailService) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
@@ -44,33 +44,31 @@ public class PasswordResetService {
         this.mailService = mailService;
     }
 
+    @Transactional
     public void requestReset(String email) {
 
-        // invalidate old tokens
         userRepository.findByEmail(email).ifPresent(user -> {
-            tokenRepository.findByUsedFalseAndExpiresAtAfter(Instant.now())
-                    .stream()
-                    .filter(t -> t.getUser().equals(user))
-                    .forEach(t -> {
-                        t.setUsed(true);
-                        tokenRepository.save(t);
-                    });
-            UUID tokenId = UUID.randomUUID();
+
+            tokenRepository.invalidateActiveTokens(user, Instant.now());
+
             String secret = UUID.randomUUID() + "-" + UUID.randomUUID();
 
             PasswordResetToken token = new PasswordResetToken();
-            token.setId(tokenId);
             token.setTokenHash(passwordEncoder.encode(secret));
-            token.setExpiresAt(Instant.now().plus(expiryMinutes, ChronoUnit.MINUTES));
+            token.setExpiresAt(
+                    Instant.now().plus(expiryMinutes, ChronoUnit.MINUTES)
+            );
             token.setUser(user);
-
             tokenRepository.save(token);
 
-            String resetLink = frontendUrl + "/reset-password?id=" + tokenId + "&token=" + secret;
+            UUID tokenId = token.getId();
+            String resetLink =
+                    frontendUrl + "/reset-password?id=" + tokenId + "&token=" + secret;
+
             mailService.sendPasswordResetEmail(user, resetLink, expiryMinutes);
         });
 
-        // Always succeed (avoid user enumeration)
+        // Always succeed
     }
 
     @Transactional
