@@ -7,6 +7,7 @@ import { Route, Routes } from 'react-router-dom'
 import RegisterPage from './pages/RegisterPage'
 import OAuthCallback from './pages/OAuthCallback'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path='/register' element={<RegisterPage />} />
           <Route path="/oauth2/callback" element={<OAuthCallback />} />
           <Route path="/forgot" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Routes>
       </Box>
       <Footer />

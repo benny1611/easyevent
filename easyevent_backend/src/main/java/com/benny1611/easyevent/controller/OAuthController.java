@@ -2,11 +2,7 @@ package com.benny1611.easyevent.controller;
 
 import com.benny1611.easyevent.dto.LoginResponse;
 import com.benny1611.easyevent.dto.OauthCodeRequest;
-import com.benny1611.easyevent.entity.User;
-import com.benny1611.easyevent.service.OAuthCodeService;
 import com.benny1611.easyevent.service.OAuthService;
-import com.benny1611.easyevent.service.UserService;
-import com.benny1611.easyevent.util.JwtUtils;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

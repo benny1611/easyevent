@@ -93,6 +93,14 @@ const en = {
         success: "If the email exists, you will receive a reset link.",
         email: "Email",
         send: "Send reset link",
+    },
+    reset: {
+        invalid: "Invalid reset link. Please request a new one.",
+        not_matching: "Passwords do not match",
+        error: "Reset link is invalid or expired",
+        reset: "Reset password",
+        new_password: "New password",
+        confirm: "Confirm password",
     }
 };
 
