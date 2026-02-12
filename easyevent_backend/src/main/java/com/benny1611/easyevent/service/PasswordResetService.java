@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -30,6 +31,8 @@ public class PasswordResetService {
     private int expiryMinutes;
     @Value("${app.frontend.url}")
     private String frontendUrl;
+    @Value("${app.password.reset.request.min-duration-ms}")
+    private long minDurationMillis;
 
     @Autowired
     public PasswordResetService(UserRepository userRepository,
@@ -47,11 +50,14 @@ public class PasswordResetService {
     @Transactional
     public void requestReset(String email) {
 
-        userRepository.findByEmail(email).ifPresent(user -> {
+        long start = System.currentTimeMillis();
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        String secret = UUID.randomUUID() + "-" + UUID.randomUUID();
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
 
             tokenRepository.invalidateActiveTokens(user, Instant.now());
-
-            String secret = UUID.randomUUID() + "-" + UUID.randomUUID();
 
             PasswordResetToken token = new PasswordResetToken();
             token.setTokenHash(passwordEncoder.encode(secret));
@@ -66,9 +72,26 @@ public class PasswordResetService {
                     frontendUrl + "/reset-password?id=" + tokenId + "&token=" + secret;
 
             mailService.sendPasswordResetEmail(user, resetLink, expiryMinutes);
-        });
-
+        } else {
+            // fake work
+            passwordEncoder.encode(secret);
+        }
         // Always succeed
+
+        enforceMinimumDuration(start);
+    }
+
+    private void enforceMinimumDuration(long startMillis) {
+        long elapsed = System.currentTimeMillis() - startMillis;
+        long remaining = minDurationMillis - elapsed;
+
+        if (remaining > 0) {
+            try {
+                Thread.sleep(remaining);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Transactional
