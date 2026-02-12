@@ -27,10 +27,9 @@ export default function Hero() {
             sm: 300,
             md: 300,
             lg: 400,
-            xl: 500
+            xl: 500,
           },
-          backgroundImage:
-            `url(${backgroundImage})`,
+          backgroundImage: `url(${backgroundImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -91,9 +90,9 @@ export default function Hero() {
               variant="contained"
               fullWidth
               sx={{
-                textTransform: 'none',
+                textTransform: "none",
                 fontWeight: 600,
-                fontSize: 20
+                fontSize: 20,
               }}
             >
               {translation.hero.create}
@@ -104,10 +103,10 @@ export default function Hero() {
               variant="outlined"
               fullWidth
               sx={{
-                textTransform: 'none',
+                textTransform: "none",
                 fontWeight: 600,
                 fontSize: 20,
-                borderWidth: '3px'
+                borderWidth: "3px",
               }}
             >
               {translation.hero.join}

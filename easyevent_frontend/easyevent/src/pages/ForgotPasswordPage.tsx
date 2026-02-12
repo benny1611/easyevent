@@ -4,44 +4,43 @@ import { ENV } from "../config/env";
 import { useI18n } from "../i18n/i18nContext";
 import { Alert, Box, Button, TextField, Typography } from "@mui/material";
 
-
 export default function ForgotPasswordPage() {
-    const [email, setEmail] = useState("");
-    const [sent, setSent] = useState(false);
-    const [error, setError] = useState<string|null>(null);
-    const [loading, setLoading] = useState(false);
-    const { translation } = useI18n();
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { translation } = useI18n();
 
-    async function handleSubmit() {
-        setLoading(true);
-        let pwRstRequest = new PasswordResetRequest(email);
-        const apiEndpoint = `${ENV.API_BASE_URL}/auth/password-reset/request`;
-        try {
-            const response = await fetch(apiEndpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(pwRstRequest),
-            });
+  async function handleSubmit() {
+    setLoading(true);
+    let pwRstRequest = new PasswordResetRequest(email);
+    const apiEndpoint = `${ENV.API_BASE_URL}/auth/password-reset/request`;
+    try {
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(pwRstRequest),
+      });
 
-            if (!response.ok) {
-                const message = (await response.text()) || translation.forgot.error;
-                throw new Error(message);
-            }
+      if (!response.ok) {
+        const message = (await response.text()) || translation.forgot.error;
+        throw new Error(message);
+      }
 
-            setSent(true);
-            setError(null);
-        } catch (err: any) {
-            setSent(false);
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
+      setSent(true);
+      setError(null);
+    } catch (err: any) {
+      setSent(false);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return (
-        <Box maxWidth={400} mx="auto" mt={30}>
+  return (
+    <Box maxWidth={400} mx="auto" mt={30}>
       <Typography variant="h5" mb={2} textAlign="center">
         {translation.forgot.forgot_pw}
       </Typography>
@@ -66,7 +65,7 @@ export default function ForgotPasswordPage() {
         disabled={sent}
         margin="normal"
         sx={{
-            mb: 5
+          mb: 5,
         }}
       />
 
@@ -79,5 +78,5 @@ export default function ForgotPasswordPage() {
         {translation.forgot.send}
       </Button>
     </Box>
-    );
+  );
 }

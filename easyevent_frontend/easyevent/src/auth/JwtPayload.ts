@@ -1,7 +1,7 @@
 export interface JwtPayload {
-  sub: string; 
+  sub: string;
   iat: number;
-  exp: number; 
+  exp: number;
   roles: string[];
   profilePictureUrl: string | null;
   username: string;
