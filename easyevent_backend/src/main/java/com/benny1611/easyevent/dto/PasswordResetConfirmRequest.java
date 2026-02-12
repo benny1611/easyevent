@@ -2,7 +2,7 @@ package com.benny1611.easyevent.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.util.UUID;
@@ -15,7 +15,10 @@ public class PasswordResetConfirmRequest {
     @NotNull
     private UUID tokenId;
 
-    @NotBlank
-    @Size(min = 8)
+    @NotBlank(message = "password cannot be empty")
+    @Pattern(
+            regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$",
+            message = "Password must be at least 8 characters long and contain a letter, a number, and a special character"
+    )
     private String newPassword;
 }
