@@ -60,4 +60,23 @@ public class LoginControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("access-token"));
     }
+
+    @Test
+    void loginFailure() throws Exception {
+        LoginRequest mockRequest = new LoginRequest();
+        mockRequest.setEmail("test@email.com");
+        mockRequest.setPassword("password");
+
+        when(loginService.login(mockRequest)).thenReturn(null);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                            "email": "test@email.com",
+                            "password": "password"
+                        }
+                        """))
+                .andExpect(status().isUnauthorized());
+    }
 }
