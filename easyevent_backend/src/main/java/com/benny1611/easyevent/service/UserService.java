@@ -129,8 +129,4 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-    public Optional<User> findByIdWithRoles(Long id) {
-        return userRepository.findByIdWithRoles(id);
-    }
-
 }
