@@ -7,7 +7,6 @@ import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
 import com.benny1611.easyevent.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
