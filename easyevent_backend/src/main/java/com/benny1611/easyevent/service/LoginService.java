@@ -27,11 +27,13 @@ public class LoginService {
     private final UserStateRepository userStateRepository;
     private final int maxFailedPWAttempts;
 
+    // @Value("${app.max-failed-password-attempts}")
     @Autowired
     public LoginService(UserRepository userRepository,
                         AuthenticationManager authenticationManager,
-                        JwtUtils jwtUtils, UserStateRepository userStateRepository,
-                        @Value("${app.max-failed-password-attempts}") int maxFailedPWAttempts) {
+                        JwtUtils jwtUtils,
+                        UserStateRepository userStateRepository,
+                        int maxFailedPWAttempts) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;

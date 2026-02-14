@@ -55,7 +55,9 @@ export default function LoginPage() {
       if (!response.ok) {
         const message =
           (await response.text()) || translation.login.invalid_credentials;
-        throw new Error(message);
+          const err = new Error(message)
+          err.cause = response.status;
+        throw err;
       }
 
       const data = await response.json();
@@ -79,8 +81,12 @@ export default function LoginPage() {
             default:
               setError(translation.login.something_went_wrong);
           }
-        } catch (e) {
-          setError(translation.login.server_unreachable);
+        } catch (e: any) {
+          if (err.cause === 401) {
+            setError(translation.login.invalid_credentials);
+          } else {
+            setError(translation.login.server_unreachable);
+          }
         }
       }
     } finally {
