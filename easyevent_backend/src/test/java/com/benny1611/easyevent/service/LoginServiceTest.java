@@ -12,11 +12,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,7 +61,6 @@ public class LoginServiceTest {
     void loginSuccess() {
         LoginRequest request = new LoginRequest();
         request.setEmail("test@email.com");
-        request.setPassword("password");
 
         User user = new User();
         user.setEmail("test@email.com");
@@ -69,5 +72,40 @@ public class LoginServiceTest {
 
         String token = loginService.login(request);
         assertEquals("token", token);
+    }
+
+    @Test
+    void loginFailure() {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("test@email.com");
+
+        // user does not exist
+        AtomicReference<String> token = new AtomicReference<>(loginService.login(request));
+        assertNull(token.get());
+
+        User user = new User();
+        user.setEmail("test@email.com");
+        user.setState(activeState);
+        user.setFailedLoginAttempts(0);
+
+        when(userRepository.findByEmailWithRolesAndState("test@email.com")).thenReturn(Optional.of(user));
+        when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException(""));
+
+        assertThrows(AuthenticationException.class, () ->
+                loginService.login(request)
+        );
+        assertEquals(1, user.getFailedLoginAttempts());
+
+        assertThrows(AuthenticationException.class, () ->
+                loginService.login(request)
+        );
+        assertEquals(2, user.getFailedLoginAttempts());
+
+        assertThrows(AuthenticationException.class, () ->
+                token.set(loginService.login(request))
+        );
+        assertNull(token.get());
+        assertEquals(3, user.getFailedLoginAttempts());
+        assertEquals(blockedState.getId(), user.getState().getId());
     }
 }
