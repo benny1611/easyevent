@@ -14,7 +14,6 @@ const OAuthCallback = () => {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
 
-  // Prevent double execution (React 18 StrictMode + re-renders)
   const hasExchanged = useRef(false);
 
   useEffect(() => {
@@ -39,12 +38,9 @@ const OAuthCallback = () => {
       })
       .then((data) => {
         login(new LoginResponse(data.token));
-
-        // Replace history so the code can't be reused on refresh
         navigate("/", { replace: true });
       })
       .catch(() => {
-        // Optional: send user back to login on failure
         navigate("/login", { replace: true });
       });
   }, [code, login, navigate]);
