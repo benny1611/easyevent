@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ENV } from "../config/env";
 import LoginResponse from "../models/dto/LoginResponse";
 import { useAuth } from "../auth/AuthContext";
@@ -8,27 +8,46 @@ import { useI18n } from "../i18n/i18nContext";
 
 const OAuthCallback = () => {
   const { translation } = useI18n();
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+
+  // Prevent double execution (React 18 StrictMode + re-renders)
+  const hasExchanged = useRef(false);
+
   useEffect(() => {
-    if (!code) {
+    if (!code || hasExchanged.current) {
       return;
     }
 
+    hasExchanged.current = true;
+
     fetch(`${ENV.BARE_URL_BASE}/api/auth/oauth/exchange`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ code }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("OAuth exchange failed");
+        }
+        return res.json();
+      })
       .then((data) => {
-        const input = new LoginResponse(data.token);
-        login(input);
+        login(new LoginResponse(data.token));
+
+        // Replace history so the code can't be reused on refresh
         navigate("/", { replace: true });
+      })
+      .catch(() => {
+        // Optional: send user back to login on failure
+        navigate("/login", { replace: true });
       });
-  });
+  }, [code, login, navigate]);
 
   return (
     <Box
