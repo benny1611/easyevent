@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class MailServiceImpl implements IMailService {
@@ -19,6 +20,8 @@ public class MailServiceImpl implements IMailService {
 
     @Value("${app.mail.from}")
     private String from;
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     @Autowired
     public MailServiceImpl(JavaMailSender mailSender, MessageSource mailMessageSource) {
@@ -28,8 +31,11 @@ public class MailServiceImpl implements IMailService {
 
     @Override
     @Async
-    public void sendPasswordResetEmail(User user, String resetLink, int expiryMinutes) {
+    public void sendPasswordResetEmail(User user, UUID tokenId, String secret, int expiryMinutes) {
         Locale locale = resolveLocale(user);
+
+        String resetLink =
+                frontendUrl + "/reset-password?id=" + tokenId + "&token=" + secret;
 
         String subject = mailMessageSource.getMessage(
                 "password.reset.subject",
@@ -43,9 +49,34 @@ public class MailServiceImpl implements IMailService {
                 locale
         );
 
+        sendMail(user.getEmail(), subject, body);
+    }
+
+    @Override
+    public void sendActivationEmail(User user) {
+        Locale locale = resolveLocale(user);
+
+        String subject = mailMessageSource.getMessage(
+                "activation.subject",
+                null,
+                locale
+        );
+
+        String activationLink = frontendUrl + "/activate?token=" + user.getActivationToken();
+
+        String body = mailMessageSource.getMessage(
+                "activation.body",
+                new Object[]{user.getName(), activationLink},
+                locale
+        );
+
+        sendMail(user.getEmail(), subject, body);
+    }
+
+    private void sendMail(String email, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
-        message.setTo(user.getEmail());
+        message.setTo(email);
         message.setSubject(subject);
         message.setText(body);
 

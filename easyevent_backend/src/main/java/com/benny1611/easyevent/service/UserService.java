@@ -7,6 +7,7 @@ import com.benny1611.easyevent.dto.CreateUserRequest;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
+import jakarta.validation.constraints.Email;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +22,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 
@@ -35,6 +38,7 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final ProfileImageService profileImageService;
     private final UserStateRepository userStateRepository;
+    private final IMailService mailService;
 
 
     @Autowired
@@ -42,12 +46,14 @@ public class UserService {
                        RoleRepository roleRepository,
                        ProfileImageService profileImageService,
                        @Qualifier("bcryptPasswordEncoder") PasswordEncoder passwordEncoder,
-                       UserStateRepository userStateRepository) {
+                       UserStateRepository userStateRepository,
+                       IMailService mailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
         this.profileImageService = profileImageService;
         this.userStateRepository = userStateRepository;
+        this.mailService = mailService;
     }
 
     @Transactional
@@ -80,6 +86,11 @@ public class UserService {
         UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find active state"));
         user.setState(activeState);
 
+        user.setActive(false);
+        UUID activationToken = UUID.randomUUID();
+        user.setActivationToken(activationToken);
+        user.setActivationSentAt(OffsetDateTime.now());
+
         user = userRepository.save(user);
 
         if (profilePicture != null && !profilePicture.isEmpty()) {
@@ -88,6 +99,8 @@ public class UserService {
             user.setProfilePictureUrl(profilePicUrl);
             user = userRepository.save(user);
         }
+
+        mailService.sendActivationEmail(user);
 
         return user;
     }
@@ -98,6 +111,9 @@ public class UserService {
         user.setName(name);
         user.setEmail(email);
         user.setPassword(null);
+        user.setActive(true);
+        user.setActivationToken(null);
+        user.setActivationSentAt(null);
         Role role = roleRepository.findByName("ROLE_USER").orElseThrow(() -> new RuntimeException("Could not find the user role"));
         user.setRoles(Set.of(role));
         UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find active state"));
@@ -129,4 +145,31 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
+    public User activateUser(UUID token) {
+        Optional<User> userOptional = userRepository.findByActivationToken(token);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setActive(true);
+            user.setActivationToken(null);
+            user.setActivationSentAt(null);
+            userRepository.save(user);
+            return user;
+        } else {
+            return null;
+        }
+    }
+
+    public void resendActivation(@Email String email) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (!user.isActive()) {
+                UUID token = UUID.randomUUID();
+                user.setActivationToken(token);
+                user.setActivationSentAt(OffsetDateTime.now());
+                userRepository.save(user);
+                mailService.sendActivationEmail(user);
+            }
+        }
+    }
 }

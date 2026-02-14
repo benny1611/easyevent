@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "users")
@@ -38,6 +35,15 @@ public class User {
 
     @Column(name = "language", length = 5)
     private String language;
+
+    @Column(name = "active", nullable = false)
+    private boolean active;
+
+    @Column(name = "activation_token")
+    private UUID activationToken;
+
+    @Column(name = "activation_sent_at")
+    private OffsetDateTime activationSentAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "state_id")

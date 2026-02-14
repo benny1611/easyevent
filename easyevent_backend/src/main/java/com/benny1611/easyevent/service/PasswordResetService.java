@@ -29,8 +29,6 @@ public class PasswordResetService {
     private final IMailService mailService;
     @Value("${app.password.reset.token.expiry-minutes}")
     private int expiryMinutes;
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
     @Value("${app.password.reset.request.min-duration-ms}")
     private long minDurationMillis;
 
@@ -68,10 +66,8 @@ public class PasswordResetService {
             tokenRepository.save(token);
 
             UUID tokenId = token.getId();
-            String resetLink =
-                    frontendUrl + "/reset-password?id=" + tokenId + "&token=" + secret;
 
-            mailService.sendPasswordResetEmail(user, resetLink, expiryMinutes);
+            mailService.sendPasswordResetEmail(user, tokenId, secret, expiryMinutes);
         } else {
             // fake work
             passwordEncoder.encode(secret);
