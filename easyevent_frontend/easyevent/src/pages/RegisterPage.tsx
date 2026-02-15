@@ -62,9 +62,6 @@ const RegisterPage: React.FC = () => {
           setPasswordError(!isValidPassword(event.target.value));
           break;
         case "repeatPassword":
-          console.log(
-            "pass: " + form.password + " repeat: " + event.target.value,
-          );
           setRepeatPasswordError(!isRepeatPasswordEquals(event.target.value));
           break;
       }
@@ -79,6 +76,14 @@ const RegisterPage: React.FC = () => {
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    console.log(file.size);
+    if (file.size > 5242880) {
+      setError(translation.register.file_too_big);
+      return;
+    }
+    if (error === translation.register.file_too_big) {
+      setError(null);
+    }
     setForm((prev) => ({
       ...prev,
       profilePicture: file,
@@ -157,7 +162,7 @@ const RegisterPage: React.FC = () => {
       setTimeout(() => {
         setSuccess(false);
         navigate("/");
-      }, 2000);
+      }, 5000);
     } catch (err: any) {
       setError(err.message ?? "Something went wrong");
       setSuccess(false);

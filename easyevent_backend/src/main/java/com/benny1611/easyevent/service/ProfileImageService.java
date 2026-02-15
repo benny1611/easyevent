@@ -1,6 +1,8 @@
 package com.benny1611.easyevent.service;
 
 import com.benny1611.easyevent.util.ByteArrayMultipartFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,22 +21,16 @@ import java.nio.file.Paths;
 
 @Service
 public class ProfileImageService {
-    private int maxFileSize;
 
     private final Path uploadPath;
 
-    public ProfileImageService(@Value("${upload.directory}") String uploadDirString,
-                               @Value("${upload.max-file-size-mb}") int maxFileSize) throws IOException {
+    public ProfileImageService(@Value("${upload.directory}") String uploadDirString) throws IOException {
         uploadPath = Files.createDirectories(Paths.get(uploadDirString));
-        this.maxFileSize = maxFileSize * 1024 * 1024;
     }
 
     private void validateImage(MultipartFile file) throws IOException {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Empty file");
-        }
-        if (file.getSize() > maxFileSize) {
-            throw new IllegalArgumentException("Max file size is 5MB");
         }
 
         if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
