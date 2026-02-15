@@ -54,6 +54,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(
                         "/api/users/create",
+                                "/api/users/activate",
+                                "/api/users/resend-activation",
                                 "/api/auth/**",
                                 "/oauth2/**",
                                 "/users/**",

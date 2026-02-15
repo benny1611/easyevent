@@ -1,4 +1,4 @@
-export class ResendActivationMailRequest {
+export class ActivationMailRequest {
     token: string;
 
     constructor(token: string) {

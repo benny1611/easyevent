@@ -8,6 +8,7 @@ import RegisterPage from "./pages/RegisterPage";
 import OAuthCallback from "./pages/OAuthCallback";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ActivationPage from "./pages/ActivationPage";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/oauth2/callback" element={<OAuthCallback />} />
           <Route path="/forgot" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/activate" element={<ActivationPage />} />
         </Routes>
       </Box>
       <Footer />

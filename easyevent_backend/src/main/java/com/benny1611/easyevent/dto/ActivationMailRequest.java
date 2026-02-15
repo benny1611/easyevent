@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-public class ResendActivationMailRequest {
+public class ActivationMailRequest {
 
     @NotNull(message = "token should not be null")
     private UUID token;

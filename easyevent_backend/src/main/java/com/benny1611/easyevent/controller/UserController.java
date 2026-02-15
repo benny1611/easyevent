@@ -1,7 +1,7 @@
 package com.benny1611.easyevent.controller;
 
 import com.benny1611.easyevent.dto.CreateUserRequest;
-import com.benny1611.easyevent.dto.ResendActivationMailRequest;
+import com.benny1611.easyevent.dto.ActivationMailRequest;
 import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.service.UserService;
@@ -40,7 +40,7 @@ public class UserController {
     }
 
     @PostMapping("/activate")
-    public ResponseEntity<Void> activateUser (@Valid @RequestBody ResendActivationMailRequest request) {
+    public ResponseEntity<Void> activateUser (@Valid @RequestBody ActivationMailRequest request) {
         User user = userService.activateUser(request.getToken());
         if (user != null) {
             return ResponseEntity.ok().build();

@@ -102,6 +102,11 @@ const en = {
         reset: "Reset password",
         new_password: "New password",
         confirm: "Confirm password",
+    },
+    activation: {
+        fail: "Something went wrong",
+        token_not_found: "Could not find the activation",
+        success: "Activation successful, you will be redirected to the login page",
     }
 };
 
