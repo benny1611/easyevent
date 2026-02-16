@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,7 +37,6 @@ public class UserController {
         userDTO.setEmail(user.getEmail());
         userDTO.setName(user.getName());
         userDTO.setProfilePicture(user.getProfilePictureUrl());
-        userDTO.setActive(user.isActive());
         return new ResponseEntity<>(userDTO, HttpStatus.CREATED);
     }
 
@@ -53,5 +54,18 @@ public class UserController {
     public ResponseEntity<Void> resendActivation(@RequestParam @Email String email) {
         userService.resendActivation(email);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<UserDTO> updateUser(@AuthenticationPrincipal String email,
+                                              @RequestBody UserDTO userDTO,
+                                              @RequestPart(required = false) MultipartFile profilePicture) throws IOException {
+        UserDTO user = userService.updateUser(email, userDTO, profilePicture);
+        if (user != null) {
+            return new ResponseEntity<>(userDTO, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 }

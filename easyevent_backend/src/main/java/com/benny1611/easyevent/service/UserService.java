@@ -4,9 +4,11 @@ import com.benny1611.easyevent.dao.RoleRepository;
 import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.dao.UserStateRepository;
 import com.benny1611.easyevent.dto.CreateUserRequest;
+import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
+import com.benny1611.easyevent.util.LocaleProvider;
 import jakarta.validation.constraints.Email;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -33,12 +36,16 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
+    private static final Set<String> ISO_LANGUAGES =
+            Set.of(Locale.getISOLanguages());
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final ProfileImageService profileImageService;
     private final UserStateRepository userStateRepository;
     private final IMailService mailService;
+    private final LocaleProvider localeProvider;
 
 
     @Autowired
@@ -47,13 +54,15 @@ public class UserService {
                        ProfileImageService profileImageService,
                        @Qualifier("bcryptPasswordEncoder") PasswordEncoder passwordEncoder,
                        UserStateRepository userStateRepository,
-                       IMailService mailService) {
+                       IMailService mailService,
+                       LocaleProvider localeProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
         this.profileImageService = profileImageService;
         this.userStateRepository = userStateRepository;
         this.mailService = mailService;
+        this.localeProvider = localeProvider;
     }
 
     @Transactional
@@ -171,5 +180,66 @@ public class UserService {
                 mailService.sendActivationEmail(user);
             }
         }
+    }
+
+    public UserDTO updateUser(String email, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        UserDTO result = null;
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            String emailChange = userDTO.getEmail();
+            result = new UserDTO();
+            boolean used = false;
+            if (emailChange != null) {
+                Optional<User> checkIfEmailAlreadyExists = userRepository.findByEmail(emailChange);
+                if (checkIfEmailAlreadyExists.isEmpty()) {
+                    user.setEmail(emailChange);
+                    user.setActive(false);
+
+                    UUID activationToken = UUID.randomUUID();
+                    user.setActivationToken(activationToken);
+                    user.setActivationSentAt(OffsetDateTime.now());
+
+                    mailService.sendActivationEmail(user);
+                    result.setEmail(emailChange);
+                    used = true;
+                }
+            }
+            if (userDTO.getName() != null) {
+                String nameChange = userDTO.getName();
+                user.setName(nameChange);
+                result.setName(nameChange);
+                used = true;
+            }
+            if (profilePicture != null && !profilePicture.isEmpty()) {
+                String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
+                user.setProfilePictureUrl(profilePicUrl);
+                result.setProfilePicture(profilePicUrl);
+                used = true;
+            }
+            if (userDTO.getLanguage() != null) {
+                String language = userDTO.getLanguage();
+                Locale requested = Locale.forLanguageTag(language);
+                if (localeProvider.supports(requested)) {
+                    user.setLanguage(language);
+                    result.setLanguage(language);
+                    used = true;
+                }
+            }
+            if (used) {
+                userRepository.save(user);
+            } else {
+                return null;
+            }
+        }
+
+        return result;
+    }
+
+    private static boolean isValidLanguage(String input) {
+        if (input == null || input.isBlank()) {
+            return false;
+        }
+        return ISO_LANGUAGES.contains(input.toLowerCase());
     }
 }

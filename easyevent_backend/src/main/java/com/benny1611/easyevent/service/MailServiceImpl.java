@@ -1,6 +1,7 @@
 package com.benny1611.easyevent.service;
 
 import com.benny1611.easyevent.entity.User;
+import com.benny1611.easyevent.util.LocaleProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -17,6 +18,8 @@ public class MailServiceImpl implements IMailService {
 
     private final JavaMailSender mailSender;
     private final MessageSource mailMessageSource;
+    private final LocaleProvider localeProvider;
+
 
     @Value("${app.mail.from}")
     private String from;
@@ -24,9 +27,10 @@ public class MailServiceImpl implements IMailService {
     private String frontendUrl;
 
     @Autowired
-    public MailServiceImpl(JavaMailSender mailSender, MessageSource mailMessageSource) {
+    public MailServiceImpl(JavaMailSender mailSender, MessageSource mailMessageSource, LocaleProvider localeProvider) {
         this.mailSender = mailSender;
         this.mailMessageSource = mailMessageSource;
+        this.localeProvider = localeProvider;
     }
 
     @Override
@@ -84,8 +88,14 @@ public class MailServiceImpl implements IMailService {
     }
 
     private Locale resolveLocale(User user) {
-        return user.getLanguage() != null
-                ? Locale.forLanguageTag(user.getLanguage())
+        if (user.getLanguage() == null) {
+            return Locale.ENGLISH;
+        }
+
+        Locale requested = Locale.forLanguageTag(user.getLanguage());
+
+        return localeProvider.supports(requested)
+                ? requested
                 : Locale.ENGLISH;
     }
 }
