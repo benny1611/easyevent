@@ -160,8 +160,8 @@ const RegisterPage: React.FC = () => {
 
       setSuccess(true);
       setTimeout(() => {
-        setSuccess(false);
         navigate("/");
+        setSuccess(false);
       }, 5000);
     } catch (err: any) {
       setError(err.message ?? "Something went wrong");
