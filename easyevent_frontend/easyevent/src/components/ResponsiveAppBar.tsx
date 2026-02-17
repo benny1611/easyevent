@@ -14,7 +14,7 @@ import MenuItem from "@mui/material/MenuItem";
 import { useI18n } from "../i18n/i18nContext";
 import SvgIcon from "@mui/icons-material/Menu";
 import LogoIcon from "../assets/react.svg?react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { Link } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
 import { ENV } from "../config/env";
@@ -22,6 +22,7 @@ import { ENV } from "../config/env";
 function ResponsiveAppBar() {
   const { translation } = useI18n();
   const { isAuthenticated, logout, profilePictureUrl, username } = useAuth();
+  const navigate = useNavigate();
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
     null,
   );
@@ -48,6 +49,11 @@ function ResponsiveAppBar() {
     logout();
     setAnchorElUser(null);
   };
+
+  const handleProfile = () => {
+    navigate("/profile");
+    setAnchorElUser(null);
+  }
 
   return (
     <AppBar position="fixed" color="default">
@@ -255,7 +261,7 @@ function ResponsiveAppBar() {
                 >
                   <MenuItem
                     key={translation.nav.profile}
-                    onClick={handleCloseUserMenu}
+                    onClick={handleProfile}
                   >
                     <Typography sx={{ textAlign: "center" }}>
                       {translation.nav.profile}
