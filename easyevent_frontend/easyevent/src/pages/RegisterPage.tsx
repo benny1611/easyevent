@@ -76,7 +76,6 @@ const RegisterPage: React.FC = () => {
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    console.log(file.size);
     if (file.size > 5242880) {
       setError(translation.register.file_too_big);
       return;

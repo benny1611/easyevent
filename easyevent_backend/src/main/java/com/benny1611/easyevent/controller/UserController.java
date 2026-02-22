@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -63,6 +64,23 @@ public class UserController {
                                               @RequestPart(required = false) MultipartFile profilePicture) throws IOException {
         UserDTO user = userService.updateUser(email, userDTO, profilePicture);
         if (user != null) {
+            return new ResponseEntity<>(userDTO, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<UserDTO> getUser(@AuthenticationPrincipal String email) {
+        Optional<User> userOptional = userService.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            UserDTO userDTO = new UserDTO();
+            userDTO.setEmail(email);
+            userDTO.setName(user.getName());
+            userDTO.setLanguage(user.getLanguage());
+            userDTO.setProfilePicture(user.getProfilePictureUrl());
             return new ResponseEntity<>(userDTO, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

@@ -107,7 +107,20 @@ const en = {
         fail: "Something went wrong",
         token_not_found: "Could not find the activation",
         success: "Activation successful, you will be redirected to the login page",
-    }
+    },
+    profile: {
+        title: "Edit your profile",
+        name: "Name",
+        email: "Email",
+        old_password: "Old password",
+        new_password: "New password",
+        repeat_password: "Repeat Password",
+        name_required: "Name is required",
+        email_required: "Email is required",
+        pass_form: "Minimum eight characters, at least one letter, one number and one special character",
+        repeat_pass_helper: "Passwords must match",
+    },
+    languages: [{name: "English", code: "en"}, {name: "German", code: "de"}, {name: "Romanian", code: "ro"}]
 };
 
 export default en;
