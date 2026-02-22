@@ -21,27 +21,28 @@ function App() {
           display: "flex",
           flexDirection: "column",
           minHeight: "100vh",
-          flexGrow: 1,
         }}
       >
         <ResponsiveAppBar />
         <Toolbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/oauth2/callback" element={<OAuthCallback />} />
-          <Route path="/forgot" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/activate" element={<ActivationPage />} />
+        <Box sx={{ flexGrow: 1 }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/oauth2/callback" element={<OAuthCallback />} />
+            <Route path="/forgot" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/activate" element={<ActivationPage />} />
 
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<ProfilePage />} />
-          </Route>
-        </Routes>
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+          </Routes>
+        </Box>
+        <Footer />
       </Box>
-      <Footer />
     </>
   );
 }
