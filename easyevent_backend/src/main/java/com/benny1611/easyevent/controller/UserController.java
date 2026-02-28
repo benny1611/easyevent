@@ -57,14 +57,20 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(
+            value = "/update",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<UserDTO> updateUser(@AuthenticationPrincipal String email,
-                                              @RequestBody UserDTO userDTO,
-                                              @RequestPart(required = false) MultipartFile profilePicture) throws IOException {
+    public ResponseEntity<UserDTO> updateUser(
+            @AuthenticationPrincipal String email,
+            @RequestPart("userDTO") @Valid UserDTO userDTO,
+            @RequestPart(value = "profilePicture", required = false)
+            MultipartFile profilePicture
+    ) throws IOException {
         UserDTO user = userService.updateUser(email, userDTO, profilePicture);
         if (user != null) {
-            return new ResponseEntity<>(userDTO, HttpStatus.OK);
+            return new ResponseEntity<>(user, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
@@ -81,6 +87,8 @@ public class UserController {
             userDTO.setName(user.getName());
             userDTO.setLanguage(user.getLanguage());
             userDTO.setProfilePicture(user.getProfilePictureUrl());
+            userDTO.setActive(user.isActive());
+            userDTO.setOauthUser(user.getPassword() == null);
             return new ResponseEntity<>(userDTO, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

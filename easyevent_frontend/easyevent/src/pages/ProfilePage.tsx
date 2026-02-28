@@ -1,6 +1,12 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
   Avatar,
   Box,
+  Button,
+  Divider,
   FormControl,
   IconButton,
   InputLabel,
@@ -12,24 +18,32 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { useI18n } from "../i18n/i18nContext";
-import { PhotoCamera } from "@mui/icons-material";
+import { ExpandMore, PhotoCamera } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { ENV } from "../config/env";
+import UserDTO from "../models/dto/UserDTO";
+import LoginResponse from "../models/dto/LoginResponse";
 
 const ProfilePage = () => {
   const { translation } = useI18n();
-  const { profilePictureUrl, token } = useAuth();
+  const { profilePictureUrl, token, login } = useAuth();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [language, setLanguage] = useState<string>('en');
+  const [success, setSuccess] = useState(false);
+  const [language, setLanguage] = useState<string>("en");
+  const [loading, setLoading] = useState(false);
+  const [passwordExpanded, setPasswordExpanded] = useState(false);
+  const [canChangePassword, setCanChangePassword] = useState(false);
 
   const [nameError, setNameError] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const [oldPasswordError, setOldPasswordError] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
+  const [oldPasswordTouched, setOldPasswordTouched] = useState(false);
   const [repeatPasswordError, setRepeatPasswordError] = useState(false);
   const [repeatPasswordTouched, setRepeatPasswordTouched] = useState(false);
 
@@ -48,37 +62,58 @@ const ProfilePage = () => {
     }
 
     const data = await response.json();
-    if (data.name) {
+    const userDTO = new UserDTO(
+      data.email,
+      data.name,
+      data.profilePicture,
+      data.language,
+      null,
+      null,
+      null,
+      data.active,
+      data.oauthUser,
+    );
+    if (userDTO.name) {
       setForm((prev) => ({
         ...prev,
-        ["name"]: data.name,
+        ["name"]: userDTO.name,
       }));
     }
-    if (data.email) {
+    if (userDTO.email) {
       setForm((prev) => ({
         ...prev,
-        ["email"]: data.email,
+        ["email"]: userDTO.email,
       }));
     }
-    if (data.language) {
+    if (userDTO.language) {
       setForm((prev) => ({
         ...prev,
-        ["language"]: data.language,
+        ["language"]: userDTO.language!,
       }));
     } else {
-      const english = translation.languages.filter((lng) => lng.code === "en")[0];      
+      const english = translation.languages.filter(
+        (lng) => lng.code === "en",
+      )[0];
       setForm((prev) => ({
         ...prev,
         ["language"]: english.code,
       }));
     }
+    setForm((prev) => ({
+      ...prev,
+      ["oldPassword"]: "",
+      ["password"]: "",
+      ["repeatPassword"]: "",
+    }));
+    setCanChangePassword(!userDTO.oauthUser);
+    setPasswordExpanded(false);
+  };
+
+  const loadData = async () => {
+    await handleLoad();
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      await handleLoad();
-    };
-
     loadData();
   }, []);
 
@@ -123,9 +158,9 @@ const ProfilePage = () => {
   const handleChangeSelect = (event: SelectChangeEvent<string>) => {
     setLanguage(event.target.value as string);
     setForm((prev) => ({
-        ...prev,
-        ["language"]: event.target.value as string,
-      }));
+      ...prev,
+      ["language"]: event.target.value as string,
+    }));
   };
 
   const handleChange =
@@ -171,11 +206,120 @@ const ProfilePage = () => {
 
   const isRepeatPasswordEquals = (rep: string) => form.password === rep;
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const nameHasError = form.name.trim() === "";
+    const emailHasError = form.email.trim() === "";
+    const passwordHasError = form.password.trim() === "";
+    const repeatPasswordHasError = form.repeatPassword.trim() === "";
+    const oldPassworHasError = form.oldPassword.trim() === "";
+
+    setNameTouched(true);
+    setEmailTouched(true);
+    setOldPasswordTouched(true);
+    setPasswordTouched(true);
+    setRepeatPasswordTouched(true);
+
+    setNameError(nameHasError);
+    setEmailError(emailHasError);
+    setOldPasswordError(oldPassworHasError);
+    setPasswordError(passwordHasError);
+    setRepeatPasswordError(repeatPasswordHasError);
+
+    const isOldPassNotSetAndAnyPasswordSet =
+      oldPassworHasError && (!passwordHasError || !repeatPasswordHasError);
+    const isOldPassSetAndAnyOtherPassNotSet =
+      !oldPassworHasError && (passwordHasError || repeatPasswordError);
+
+    if (
+      nameHasError ||
+      emailHasError ||
+      isOldPassNotSetAndAnyPasswordSet ||
+      isOldPassSetAndAnyOtherPassNotSet
+    ) {
+      setError(translation.profile.something_went_wrong);
+      return;
+    }
+
+    if (form.password !== form.repeatPassword) {
+      setError(translation.profile.pws_don_t_match);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const oldPass =
+        oldPassworHasError && passwordHasError && repeatPasswordHasError
+          ? null
+          : form.oldPassword;
+      const newPass =
+        oldPassworHasError && passwordHasError && repeatPasswordHasError
+          ? null
+          : form.password;
+      const dto = new UserDTO(
+        form.email,
+        form.name,
+        null,
+        form.language,
+        oldPass,
+        newPass,
+        null,
+        true,
+        false,
+      );
+
+      const formData = new FormData();
+
+      formData.append(
+        "userDTO",
+        new Blob([JSON.stringify(dto)], { type: "application/json" }),
+      );
+
+      if (form.profilePicture) {
+        formData.append("profilePicture", form.profilePicture);
+      }
+
+      const apiEndpoint = `${ENV.API_BASE_URL}/users/update`;
+      console.log(formData.get("userDTO"));
+
+      const response = await fetch(apiEndpoint, {
+        method: "PUT",
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || translation.profile.something_went_wrong);
+      }
+      setSuccess(true);
+      loadData();
+      const data = await response.json();
+      console.log(data);
+      
+      if (data.token) {
+        const input = new LoginResponse(data.token);
+        login(input);
+      }
+      setTimeout(() => {
+        setSuccess(false);
+      }, 10000);
+    } catch (err: any) {
+      setError(err.message ?? translation.profile.something_went_wrong);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box
       component="form"
       noValidate
-      //onSubmit={handleSubmit}
+      onSubmit={handleSubmit}
       maxWidth={600}
       width="100%"
       mx="auto"
@@ -194,6 +338,12 @@ const ProfilePage = () => {
       >
         {translation.profile.title}
       </Typography>
+      {error && <Alert severity="error">{error}</Alert>}
+      {success && (
+        <Alert severity="success">
+          {translation.profile.changed_succesfully}
+        </Alert>
+      )}
       <Box display="flex" justifyContent="center">
         <Stack>
           <Avatar src={handlePreview()} sx={{ width: 90, height: 90 }} />
@@ -255,59 +405,120 @@ const ProfilePage = () => {
           ))}
         </Select>
       </FormControl>
+      <Divider sx={{ my: 3 }} />
 
-      <TextField
-        label={translation.profile.old_password}
-        onBlur={() => {
-          setPasswordTouched(true);
-          setPasswordError(!isValidPassword(form.password));
-        }}
-        error={passwordTouched && passwordError}
-        helperText={
-          passwordTouched && passwordError ? translation.profile.pass_form : ""
-        }
-        type="password"
-        required
-        value={form.password}
-        fullWidth
-        onChange={handleChange("password")}
-      />
+      {canChangePassword && (
+        <Accordion
+          expanded={passwordExpanded}
+          onChange={(_, expanded) => setPasswordExpanded(expanded)}
+          elevation={0}
+          sx={{
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 2,
+            "&:before": { display: "none" },
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMore />}
+            sx={{
+              fontWeight: 600,
+            }}
+          >
+            <Typography fontWeight={600}>
+              {translation.profile.change_password}
+            </Typography>
+          </AccordionSummary>
 
-      <TextField
-        label={translation.profile.new_password}
-        onBlur={() => {
-          setPasswordTouched(true);
-          setPasswordError(!isValidPassword(form.password));
-        }}
-        error={passwordTouched && passwordError}
-        helperText={
-          passwordTouched && passwordError ? translation.profile.pass_form : ""
-        }
-        type="password"
-        required
-        value={form.password}
-        fullWidth
-        onChange={handleChange("password")}
-      />
+          <AccordionDetails>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {translation.profile.change_password_title}
+            </Typography>
 
-      <TextField
-        label={translation.profile.repeat_password}
-        onFocus={() => {
-          setRepeatPasswordTouched(true);
-          setRepeatPasswordError(!isRepeatPasswordEquals(form.repeatPassword));
-        }}
-        error={repeatPasswordTouched && repeatPasswordError}
-        helperText={
-          repeatPasswordTouched && repeatPasswordError
-            ? translation.profile.repeat_pass_helper
-            : ""
-        }
-        type="password"
-        required
-        value={form.repeatPassword}
+            <Stack gap={2}>
+              <TextField
+                label={translation.profile.old_password}
+                type="password"
+                required={passwordExpanded}
+                value={form.oldPassword}
+                onBlur={() => {
+                  setPasswordTouched(true);
+                  setPasswordError(!isValidPassword(form.oldPassword));
+                }}
+                error={
+                  passwordExpanded && oldPasswordTouched && oldPasswordError
+                }
+                helperText={
+                  passwordExpanded && oldPasswordTouched && oldPasswordError
+                    ? translation.profile.pass_form
+                    : ""
+                }
+                fullWidth
+                onChange={handleChange("oldPassword")}
+              />
+
+              <TextField
+                label={translation.profile.new_password}
+                type="password"
+                required={passwordExpanded}
+                value={form.password}
+                onBlur={() => {
+                  setPasswordTouched(true);
+                  setPasswordError(!isValidPassword(form.password));
+                }}
+                error={passwordExpanded && passwordTouched && passwordError}
+                helperText={
+                  passwordExpanded && passwordTouched && passwordError
+                    ? translation.profile.pass_form
+                    : ""
+                }
+                fullWidth
+                onChange={handleChange("password")}
+              />
+
+              <TextField
+                label={translation.profile.repeat_password}
+                type="password"
+                required={passwordExpanded}
+                value={form.repeatPassword}
+                onBlur={() => {
+                  setRepeatPasswordTouched(true);
+                  setRepeatPasswordError(form.repeatPassword !== form.password);
+                }}
+                error={
+                  passwordExpanded &&
+                  repeatPasswordTouched &&
+                  repeatPasswordError
+                }
+                helperText={
+                  passwordExpanded &&
+                  repeatPasswordTouched &&
+                  repeatPasswordError
+                    ? translation.profile.repeat_pass_helper
+                    : ""
+                }
+                fullWidth
+                onChange={handleChange("repeatPassword")}
+              />
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
+      )}
+
+      <Button
         fullWidth
-        onChange={handleChange("repeatPassword")}
-      />
+        type="submit"
+        variant="contained"
+        size="large"
+        sx={{
+          textTransform: "none",
+          fontWeight: 600,
+          fontSize: 20,
+        }}
+        disabled={loading}
+      >
+        {translation.profile.save}
+      </Button>
     </Box>
   );
 };

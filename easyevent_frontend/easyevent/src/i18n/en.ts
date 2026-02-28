@@ -119,6 +119,12 @@ const en = {
         email_required: "Email is required",
         pass_form: "Minimum eight characters, at least one letter, one number and one special character",
         repeat_pass_helper: "Passwords must match",
+        save: "Save",
+        change_password: "Change password",
+        change_password_title: "Update your password",
+        something_went_wrong: "Something went wrong",
+        pws_don_t_match: "Passwords do not match",
+        changed_succesfully: "All changes applied successfully",
     },
     languages: [{name: "English", code: "en"}, {name: "German", code: "de"}, {name: "Romanian", code: "ro"}]
 };

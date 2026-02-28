@@ -8,6 +8,7 @@ import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
+import com.benny1611.easyevent.util.JwtUtils;
 import com.benny1611.easyevent.util.LocaleProvider;
 import jakarta.validation.constraints.Email;
 import org.slf4j.Logger;
@@ -36,8 +37,6 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
-    private static final Set<String> ISO_LANGUAGES =
-            Set.of(Locale.getISOLanguages());
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -46,6 +45,7 @@ public class UserService {
     private final UserStateRepository userStateRepository;
     private final IMailService mailService;
     private final LocaleProvider localeProvider;
+    private final JwtUtils jwtUtils;
 
 
     @Autowired
@@ -55,7 +55,7 @@ public class UserService {
                        @Qualifier("bcryptPasswordEncoder") PasswordEncoder passwordEncoder,
                        UserStateRepository userStateRepository,
                        IMailService mailService,
-                       LocaleProvider localeProvider) {
+                       LocaleProvider localeProvider, JwtUtils jwtUtils) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
@@ -63,6 +63,7 @@ public class UserService {
         this.userStateRepository = userStateRepository;
         this.mailService = mailService;
         this.localeProvider = localeProvider;
+        this.jwtUtils = jwtUtils;
     }
 
     @Transactional
@@ -189,7 +190,10 @@ public class UserService {
             User user = userOptional.get();
             String emailChange = userDTO.getEmail();
             result = new UserDTO();
+            result.setActive(user.isActive());
+            result.setOauthUser(user.getPassword() == null);
             boolean used = false;
+            boolean refreshToken = false;
             if (emailChange != null) {
                 Optional<User> checkIfEmailAlreadyExists = userRepository.findByEmail(emailChange);
                 if (checkIfEmailAlreadyExists.isEmpty()) {
@@ -202,20 +206,23 @@ public class UserService {
 
                     mailService.sendActivationEmail(user);
                     result.setEmail(emailChange);
+                    result.setActive(false);
                     used = true;
                 }
             }
-            if (userDTO.getName() != null) {
+            if (userDTO.getName() != null && !userDTO.getName().equals(user.getName())) {
                 String nameChange = userDTO.getName();
                 user.setName(nameChange);
                 result.setName(nameChange);
                 used = true;
+                refreshToken = true;
             }
             if (profilePicture != null && !profilePicture.isEmpty()) {
                 String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
                 user.setProfilePictureUrl(profilePicUrl);
                 result.setProfilePicture(profilePicUrl);
                 used = true;
+                refreshToken = true;
             }
             if (userDTO.getLanguage() != null) {
                 String language = userDTO.getLanguage();
@@ -226,20 +233,29 @@ public class UserService {
                     used = true;
                 }
             }
+            if (userDTO.getOldPassword() != null && userDTO.getNewPassword() != null) {
+                if (user.getPassword() != null) { // users that are logged in via OAuth can't change their password, because they have none
+                    String oldPassword = userDTO.getOldPassword();
+                    String newPassword = userDTO.getNewPassword();
+                    if (passwordEncoder.matches(oldPassword, user.getPassword())) {
+                        String encodedPassword = passwordEncoder.encode(newPassword);
+                        user.setPassword(encodedPassword);
+                        used = true;
+                    } else {
+                        throw new IllegalArgumentException("PASSWORD_INCORRECT");
+                    }
+                }
+            }
             if (used) {
                 userRepository.save(user);
+                if (refreshToken) {
+                    String token = jwtUtils.generateToken(user);
+                    result.setToken(token);
+                }
             } else {
                 return null;
             }
         }
-
         return result;
-    }
-
-    private static boolean isValidLanguage(String input) {
-        if (input == null || input.isBlank()) {
-            return false;
-        }
-        return ISO_LANGUAGES.contains(input.toLowerCase());
     }
 }

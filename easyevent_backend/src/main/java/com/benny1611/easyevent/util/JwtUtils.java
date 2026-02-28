@@ -51,8 +51,6 @@ public class JwtUtils {
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (ExpiredJwtException e) {
-            return false;
         } catch (JwtException e) {
             return false;
         }
