@@ -133,7 +133,6 @@ public class UserService {
 
         byte[] profilePicData;
         try {
-            LOG.info("Profile pic URL: {}", pictureUrl);
             profilePicData = ProfileImageService.downloadImage(pictureUrl);
         } catch (IOException | InterruptedException | RuntimeException e) {
             profilePicData = null;
@@ -151,6 +150,9 @@ public class UserService {
         return user;
     }
 
+    public Optional<User> findById(Long id) {
+        return userRepository.findById(id);
+    }
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
@@ -183,18 +185,18 @@ public class UserService {
         }
     }
 
-    public UserDTO updateUser(String email, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
-        Optional<User> userOptional = userRepository.findByEmail(email);
+    public UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
+        Optional<User> userOptional = userRepository.findById(id);
         UserDTO result = null;
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             String emailChange = userDTO.getEmail();
             result = new UserDTO();
             result.setActive(user.isActive());
-            result.setOauthUser(user.getPassword() == null);
+            result.setPasswordSet(user.getPassword() != null);
             boolean used = false;
             boolean refreshToken = false;
-            if (emailChange != null) {
+            if (emailChange != null && !emailChange.equalsIgnoreCase(user.getEmail())) {
                 Optional<User> checkIfEmailAlreadyExists = userRepository.findByEmail(emailChange);
                 if (checkIfEmailAlreadyExists.isEmpty()) {
                     user.setEmail(emailChange);
@@ -208,6 +210,9 @@ public class UserService {
                     result.setEmail(emailChange);
                     result.setActive(false);
                     used = true;
+                    refreshToken = true;
+                } else {
+                    throw new IllegalArgumentException("Email already in use");
                 }
             }
             if (userDTO.getName() != null && !userDTO.getName().equals(user.getName())) {
@@ -233,17 +238,18 @@ public class UserService {
                     used = true;
                 }
             }
-            if (userDTO.getOldPassword() != null && userDTO.getNewPassword() != null) {
-                if (user.getPassword() != null) { // users that are logged in via OAuth can't change their password, because they have none
-                    String oldPassword = userDTO.getOldPassword();
-                    String newPassword = userDTO.getNewPassword();
-                    if (passwordEncoder.matches(oldPassword, user.getPassword())) {
-                        String encodedPassword = passwordEncoder.encode(newPassword);
-                        user.setPassword(encodedPassword);
-                        used = true;
-                    } else {
+            if (userDTO.getNewPassword() != null) {
+                if (user.getPassword() == null) {
+                    // OAuth-only user setting first password
+                    user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
+                    used = true;
+                } else {
+                    // Password user changing password
+                    if (!passwordEncoder.matches(userDTO.getOldPassword(), user.getPassword())) {
                         throw new IllegalArgumentException("PASSWORD_INCORRECT");
                     }
+                    user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
+                    used = true;
                 }
             }
             if (used) {

@@ -31,18 +31,19 @@ public class JwtUtils {
     }
 
     public String generateToken(User user) {
-        String username = user.getEmail();
         List<String> roles = user.getRoles().stream().map(Role::getName).toList();
         return Jwts.builder()
-                .subject(username)
+                .subject(user.getId().toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .claim("roles", roles)
                 .claim("profilePictureUrl", user.getProfilePictureUrl())
+                .claim("email", user.getEmail())
                 .claim("username", user.getName())
                 .signWith(key)
                 .compact();
     }
+
 
     public boolean validateToken(String token) {
         try {
@@ -56,13 +57,25 @@ public class JwtUtils {
         }
     }
 
-    public String getUsernameFromToken(String token) {
-        return Jwts.parser()
+    public Long getUserIdFromToken(String token) {
+        String subject = Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+        return Long.parseLong(subject);
+    }
+
+    public String getEmailFromToken(String token) {
+        Object email = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("email");
+
+        return email != null ? email.toString() : null;
     }
 
     public List<GrantedAuthority> getAuthorities(String token, List<Role> allRoles) {

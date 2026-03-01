@@ -1,5 +1,6 @@
 package com.benny1611.easyevent.util;
 
+import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.RoleRepository;
 import com.benny1611.easyevent.entity.Role;
 import jakarta.servlet.FilterChain;
@@ -43,18 +44,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = hearder.substring(7);
 
             if (jwtUtils.validateToken(token)) {
-                String email = jwtUtils.getUsernameFromToken(token);
+                Long userId = jwtUtils.getUserIdFromToken(token);
+                String email = jwtUtils.getEmailFromToken(token);
+
                 List<Role> allRoles = roleRepository.findAll();
                 List<GrantedAuthority> authorities = jwtUtils.getAuthorities(token, allRoles);
-                if (authorities != null) {
-                    Authentication auth =
-                            new UsernamePasswordAuthenticationToken(
-                                    email,
-                                    null,
-                                    authorities
-                            );
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
+
+                AuthenticatedUser principal = new AuthenticatedUser(userId, email);
+                Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
 

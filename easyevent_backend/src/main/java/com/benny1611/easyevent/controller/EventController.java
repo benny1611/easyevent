@@ -1,5 +1,6 @@
 package com.benny1611.easyevent.controller;
 
+import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dto.CreateEventRequest;
 import com.benny1611.easyevent.dto.CreateEventResponse;
 import com.benny1611.easyevent.dto.EventResponse;
@@ -34,7 +35,7 @@ public class EventController {
     }
 
     @GetMapping
-    public PagedModel<EntityModel<EventResponse>> getAllEvents(@AuthenticationPrincipal String email,
+    public PagedModel<EntityModel<EventResponse>> getAllEvents(@AuthenticationPrincipal AuthenticatedUser principal,
                                                                @PageableDefault(size = 20, sort = "date") Pageable pageable,
                                                                PagedResourcesAssembler<EventResponse> assembler) {
         Page<EventResponse> page = eventService.getEvents(pageable);
@@ -48,8 +49,8 @@ public class EventController {
 
     @PostMapping("/create")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<CreateEventResponse> createEvent(@AuthenticationPrincipal String email, @Valid @RequestBody CreateEventRequest request) {
-        CreateEventResponse response = eventService.createEvent(request, email);
+    public ResponseEntity<CreateEventResponse> createEvent(@AuthenticationPrincipal AuthenticatedUser principal, @Valid @RequestBody CreateEventRequest request) {
+        CreateEventResponse response = eventService.createEvent(request, principal.getEmail());
         return ResponseEntity.ok(response);
     }
 

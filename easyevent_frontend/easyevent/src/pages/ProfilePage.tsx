@@ -34,7 +34,7 @@ const ProfilePage = () => {
   const [language, setLanguage] = useState<string>("en");
   const [loading, setLoading] = useState(false);
   const [passwordExpanded, setPasswordExpanded] = useState(false);
-  const [canChangePassword, setCanChangePassword] = useState(false);
+  const [isPasswordSet, setIsPasswordSet] = useState(false);
 
   const [nameError, setNameError] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
@@ -105,7 +105,7 @@ const ProfilePage = () => {
       ["password"]: "",
       ["repeatPassword"]: "",
     }));
-    setCanChangePassword(!userDTO.oauthUser);
+    setIsPasswordSet(!userDTO.isPasswordSet);
     setPasswordExpanded(false);
   };
 
@@ -407,7 +407,7 @@ const ProfilePage = () => {
       </FormControl>
       <Divider sx={{ my: 3 }} />
 
-      {canChangePassword && (
+      {isPasswordSet && (
         <Accordion
           expanded={passwordExpanded}
           onChange={(_, expanded) => setPasswordExpanded(expanded)}

@@ -18,5 +18,5 @@ public class UserDTO {
     private String newPassword;
     private String token;
     private boolean active;
-    private boolean oauthUser;
+    private boolean isPasswordSet;
 }

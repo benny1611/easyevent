@@ -1,5 +1,6 @@
 package com.benny1611.easyevent.controller;
 
+import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dto.CreateUserRequest;
 import com.benny1611.easyevent.dto.ActivationMailRequest;
 import com.benny1611.easyevent.dto.UserDTO;
@@ -63,12 +64,12 @@ public class UserController {
     )
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UserDTO> updateUser(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestPart("userDTO") @Valid UserDTO userDTO,
             @RequestPart(value = "profilePicture", required = false)
             MultipartFile profilePicture
     ) throws IOException {
-        UserDTO user = userService.updateUser(email, userDTO, profilePicture);
+        UserDTO user = userService.updateUser(principal.getUserId(), userDTO, profilePicture);
         if (user != null) {
             return new ResponseEntity<>(user, HttpStatus.OK);
         } else {
@@ -78,17 +79,17 @@ public class UserController {
 
     @GetMapping("/")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<UserDTO> getUser(@AuthenticationPrincipal String email) {
-        Optional<User> userOptional = userService.findByEmail(email);
+    public ResponseEntity<UserDTO> getUser(@AuthenticationPrincipal AuthenticatedUser principal) {
+        Optional<User> userOptional = userService.findById(principal.getUserId());
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             UserDTO userDTO = new UserDTO();
-            userDTO.setEmail(email);
+            userDTO.setEmail(user.getEmail());
             userDTO.setName(user.getName());
             userDTO.setLanguage(user.getLanguage());
             userDTO.setProfilePicture(user.getProfilePictureUrl());
             userDTO.setActive(user.isActive());
-            userDTO.setOauthUser(user.getPassword() == null);
+            userDTO.setPasswordSet(user.getPassword() == null);
             return new ResponseEntity<>(userDTO, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

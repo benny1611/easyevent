@@ -18,11 +18,6 @@ public class PasswordChangeValidator implements ConstraintValidator<ValidUserDTO
         String oldPwd = dto.getOldPassword();
         String newPwd = dto.getNewPassword();
 
-        // If old password is not provided, skip validation
-        if (oldPwd == null || oldPwd.isBlank()) {
-            return true;
-        }
-
         if (newPwd == null || !PASSWORD_PATTERN.matcher(newPwd).matches()) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(

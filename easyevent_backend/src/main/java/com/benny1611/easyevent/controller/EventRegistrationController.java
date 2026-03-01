@@ -1,5 +1,6 @@
 package com.benny1611.easyevent.controller;
 
+import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dto.EventRegistrationRequest;
 import com.benny1611.easyevent.dto.GetEventRegistrationResponse;
 import com.benny1611.easyevent.service.EventRegistrationsService;
@@ -35,9 +36,9 @@ public class EventRegistrationController {
     }
 
     @PostMapping("/event")
-    public ResponseEntity<Void> registerToAnEvent(@AuthenticationPrincipal String email,
+    public ResponseEntity<Void> registerToAnEvent(@AuthenticationPrincipal AuthenticatedUser principal,
                                                                        @Valid @RequestBody EventRegistrationRequest registrationRequest) {
-        eventRegistrationsService.registerToAnEvent(email, registrationRequest);
+        eventRegistrationsService.registerToAnEvent(principal.getEmail(), registrationRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

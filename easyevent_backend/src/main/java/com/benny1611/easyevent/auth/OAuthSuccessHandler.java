@@ -1,12 +1,15 @@
 package com.benny1611.easyevent.auth;
 
 import com.benny1611.easyevent.entity.User;
+import com.benny1611.easyevent.entity.UserOAuthAccount;
 import com.benny1611.easyevent.service.OAuthCodeService;
+import com.benny1611.easyevent.service.UserOAuthAccountService;
 import com.benny1611.easyevent.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -18,14 +21,15 @@ import java.util.Optional;
 public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserService userService;
-
+    private final UserOAuthAccountService oAuthAccountService;
     private final OAuthCodeService codeService;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    public OAuthSuccessHandler(UserService userService, OAuthCodeService codeService) {
+    public OAuthSuccessHandler(UserService userService, UserOAuthAccountService oAuthAccountService, OAuthCodeService codeService) {
         this.userService = userService;
+        this.oAuthAccountService = oAuthAccountService;
         this.codeService = codeService;
     }
 
@@ -35,27 +39,48 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
             HttpServletResponse response,
             Authentication authentication) throws IOException {
 
-        OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
+        OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
+        OAuth2User oAuthUser = authToken.getPrincipal();
+
+        String providerRegistrationId = authToken.getAuthorizedClientRegistrationId();
+        String providerUserId = oAuthUser.getAttribute("sub");
+        if (providerUserId == null) {
+            throw new IllegalStateException("OAuth provider did not return 'sub'");
+        }
 
         String email = oAuthUser.getAttribute("email");
         String name = oAuthUser.getAttribute("name");
         String pictureUrl = oAuthUser.getAttribute("picture");
 
-        Optional<User> userOptional = userService.findByEmail(email);
-        User user = userOptional.orElseGet(() -> {
-            try {
-                return createUser(email, name, pictureUrl);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        Optional<UserOAuthAccount> existingAccount =
+                oAuthAccountService.findByProviderAndProviderUserId(
+                        providerRegistrationId,
+                        providerUserId
+                );
+        User user;
+        if (existingAccount.isPresent()) {
+            user = existingAccount.get().getUser();
+        } else {
+            if (email != null) {
+                user = userService.findByEmail(email).orElseGet(() -> {
+                    try {
+                        return userService.createUser(email, name, pictureUrl);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } else {
+                try {
+                    user = userService.createUser(null, name, pictureUrl);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        });
+            oAuthAccountService.linkAccount(user, providerRegistrationId, providerUserId, email);
+        }
 
         String code = codeService.create(user);
 
         response.sendRedirect(frontendUrl + "/oauth2/callback?code=" + code);
-    }
-
-    private User createUser(String email, String name, String pictureUrl) throws IOException {
-        return userService.createUser(email, name, pictureUrl);
     }
 }

@@ -7,9 +7,9 @@ export class UserDTO {
     newPassword: string|null;
     token: string|null;
     active: boolean;
-    oauthUser: boolean;
+    isPasswordSet: boolean;
 
-    constructor(email: string, name: string, profilePicture: string|null, language: string|null, oldPassword: string|null, newPassword: string|null, token: string|null, active: boolean, oauthUser: boolean) {
+    constructor(email: string, name: string, profilePicture: string|null, language: string|null, oldPassword: string|null, newPassword: string|null, token: string|null, active: boolean, isPasswordSet: boolean) {
         this.email = email;
         this.name = name;
         this.profilePicture = profilePicture;
@@ -18,7 +18,7 @@ export class UserDTO {
         this.newPassword = newPassword;
         this.token = token;
         this.active = active;
-        this.oauthUser = oauthUser;
+        this.isPasswordSet = isPasswordSet;
     }
 }
 
