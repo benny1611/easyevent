@@ -5,4 +5,5 @@ export interface JwtPayload {
   roles: string[];
   profilePictureUrl: string | null;
   username: string;
+  isLocalPasswordSet: boolean;
 }

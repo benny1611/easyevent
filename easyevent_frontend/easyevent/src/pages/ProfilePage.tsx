@@ -27,14 +27,13 @@ import LoginResponse from "../models/dto/LoginResponse";
 
 const ProfilePage = () => {
   const { translation } = useI18n();
-  const { profilePictureUrl, token, login } = useAuth();
+  const { profilePictureUrl, token, isLocalPasswordSet, login } = useAuth();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [language, setLanguage] = useState<string>("en");
   const [loading, setLoading] = useState(false);
   const [passwordExpanded, setPasswordExpanded] = useState(false);
-  const [isPasswordSet, setIsPasswordSet] = useState(false);
 
   const [nameError, setNameError] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
@@ -105,7 +104,6 @@ const ProfilePage = () => {
       ["password"]: "",
       ["repeatPassword"]: "",
     }));
-    setIsPasswordSet(!userDTO.isPasswordSet);
     setPasswordExpanded(false);
   };
 
@@ -233,12 +231,13 @@ const ProfilePage = () => {
     const isOldPassSetAndAnyOtherPassNotSet =
       !oldPassworHasError && (passwordHasError || repeatPasswordError);
 
-    if (
-      nameHasError ||
-      emailHasError ||
-      isOldPassNotSetAndAnyPasswordSet ||
-      isOldPassSetAndAnyOtherPassNotSet
-    ) {
+    const localUserNotOk =
+      !isLocalPasswordSet &&
+      (isOldPassNotSetAndAnyPasswordSet || isOldPassSetAndAnyOtherPassNotSet);
+    const oauthUserNotOk =
+      isLocalPasswordSet && (passwordHasError || repeatPasswordError);
+
+    if (nameHasError || emailHasError || localUserNotOk || oauthUserNotOk) {
       setError(translation.profile.something_went_wrong);
       return;
     }
@@ -300,7 +299,7 @@ const ProfilePage = () => {
       loadData();
       const data = await response.json();
       console.log(data);
-      
+
       if (data.token) {
         const input = new LoginResponse(data.token);
         login(input);
@@ -312,6 +311,9 @@ const ProfilePage = () => {
       setError(err.message ?? translation.profile.something_went_wrong);
     } finally {
       setLoading(false);
+      setOldPasswordTouched(false);
+      setPasswordTouched(false);
+      setRepeatPasswordTouched(false);
     }
   };
 
@@ -407,35 +409,39 @@ const ProfilePage = () => {
       </FormControl>
       <Divider sx={{ my: 3 }} />
 
-      {isPasswordSet && (
-        <Accordion
-          expanded={passwordExpanded}
-          onChange={(_, expanded) => setPasswordExpanded(expanded)}
-          elevation={0}
+      <Accordion
+        expanded={passwordExpanded}
+        onChange={(_, expanded) => setPasswordExpanded(expanded)}
+        elevation={0}
+        sx={{
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 2,
+          "&:before": { display: "none" },
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMore />}
           sx={{
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: 2,
-            "&:before": { display: "none" },
+            fontWeight: 600,
           }}
         >
-          <AccordionSummary
-            expandIcon={<ExpandMore />}
-            sx={{
-              fontWeight: 600,
-            }}
-          >
-            <Typography fontWeight={600}>
-              {translation.profile.change_password}
-            </Typography>
-          </AccordionSummary>
+          <Typography fontWeight={600}>
+            {isLocalPasswordSet
+              ? translation.profile.set_password
+              : translation.profile.change_password}
+          </Typography>
+        </AccordionSummary>
 
-          <AccordionDetails>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {translation.profile.change_password_title}
-            </Typography>
+        <AccordionDetails>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {isLocalPasswordSet
+              ? translation.profile.set_password_title
+              : translation.profile.change_password_title}
+          </Typography>
 
-            <Stack gap={2}>
+          <Stack gap={2}>
+            {!isLocalPasswordSet && (
               <TextField
                 label={translation.profile.old_password}
                 type="password"
@@ -456,54 +462,50 @@ const ProfilePage = () => {
                 fullWidth
                 onChange={handleChange("oldPassword")}
               />
+            )}
 
-              <TextField
-                label={translation.profile.new_password}
-                type="password"
-                required={passwordExpanded}
-                value={form.password}
-                onBlur={() => {
-                  setPasswordTouched(true);
-                  setPasswordError(!isValidPassword(form.password));
-                }}
-                error={passwordExpanded && passwordTouched && passwordError}
-                helperText={
-                  passwordExpanded && passwordTouched && passwordError
-                    ? translation.profile.pass_form
-                    : ""
-                }
-                fullWidth
-                onChange={handleChange("password")}
-              />
+            <TextField
+              label={translation.profile.new_password}
+              type="password"
+              required={passwordExpanded}
+              value={form.password}
+              onBlur={() => {
+                setPasswordTouched(true);
+                setPasswordError(!isValidPassword(form.password));
+              }}
+              error={passwordExpanded && passwordTouched && passwordError}
+              helperText={
+                passwordExpanded && passwordTouched && passwordError
+                  ? translation.profile.pass_form
+                  : ""
+              }
+              fullWidth
+              onChange={handleChange("password")}
+            />
 
-              <TextField
-                label={translation.profile.repeat_password}
-                type="password"
-                required={passwordExpanded}
-                value={form.repeatPassword}
-                onBlur={() => {
-                  setRepeatPasswordTouched(true);
-                  setRepeatPasswordError(form.repeatPassword !== form.password);
-                }}
-                error={
-                  passwordExpanded &&
-                  repeatPasswordTouched &&
-                  repeatPasswordError
-                }
-                helperText={
-                  passwordExpanded &&
-                  repeatPasswordTouched &&
-                  repeatPasswordError
-                    ? translation.profile.repeat_pass_helper
-                    : ""
-                }
-                fullWidth
-                onChange={handleChange("repeatPassword")}
-              />
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
-      )}
+            <TextField
+              label={translation.profile.repeat_password}
+              type="password"
+              required={passwordExpanded}
+              value={form.repeatPassword}
+              onBlur={() => {
+                setRepeatPasswordTouched(true);
+                setRepeatPasswordError(form.repeatPassword !== form.password);
+              }}
+              error={
+                passwordExpanded && repeatPasswordTouched && repeatPasswordError
+              }
+              helperText={
+                passwordExpanded && repeatPasswordTouched && repeatPasswordError
+                  ? translation.profile.repeat_pass_helper
+                  : ""
+              }
+              fullWidth
+              onChange={handleChange("repeatPassword")}
+            />
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
 
       <Button
         fullWidth

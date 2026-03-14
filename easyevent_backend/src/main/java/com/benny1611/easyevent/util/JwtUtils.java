@@ -32,6 +32,8 @@ public class JwtUtils {
 
     public String generateToken(User user) {
         List<String> roles = user.getRoles().stream().map(Role::getName).toList();
+        String password = user.getPassword();
+        boolean isLocalPasswordSet = password == null;
         return Jwts.builder()
                 .subject(user.getId().toString())
                 .issuedAt(new Date())
@@ -40,6 +42,7 @@ public class JwtUtils {
                 .claim("profilePictureUrl", user.getProfilePictureUrl())
                 .claim("email", user.getEmail())
                 .claim("username", user.getName())
+                .claim("isLocalPasswordSet", isLocalPasswordSet)
                 .signWith(key)
                 .compact();
     }

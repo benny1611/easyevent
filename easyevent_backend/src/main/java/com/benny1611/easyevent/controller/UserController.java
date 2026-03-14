@@ -89,7 +89,7 @@ public class UserController {
             userDTO.setLanguage(user.getLanguage());
             userDTO.setProfilePicture(user.getProfilePictureUrl());
             userDTO.setActive(user.isActive());
-            userDTO.setPasswordSet(user.getPassword() == null);
+            userDTO.setLocalPasswordSet(user.getPassword() == null);
             return new ResponseEntity<>(userDTO, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

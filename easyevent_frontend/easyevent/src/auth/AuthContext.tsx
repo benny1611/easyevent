@@ -8,6 +8,7 @@ type AuthContextType = {
   profilePictureUrl: string | null;
   username: string;
   isAuthenticated: boolean;
+  isLocalPasswordSet: boolean;
   hasRole: (role: string) => boolean;
   login: (input: LoginResponse) => void;
   logout: () => void;
@@ -77,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       roles: payload?.roles ?? [],
       profilePictureUrl: payload?.profilePictureUrl ?? null,
       username: payload?.username ?? "",
+      isLocalPasswordSet: payload?.isLocalPasswordSet!,
       login,
       logout,
       hasRole: (role: string) => payload?.roles.includes(role) ?? false,

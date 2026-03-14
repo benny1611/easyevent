@@ -193,7 +193,7 @@ public class UserService {
             String emailChange = userDTO.getEmail();
             result = new UserDTO();
             result.setActive(user.isActive());
-            result.setPasswordSet(user.getPassword() != null);
+            result.setLocalPasswordSet(user.getPassword() != null);
             boolean used = false;
             boolean refreshToken = false;
             if (emailChange != null && !emailChange.equalsIgnoreCase(user.getEmail())) {
@@ -242,6 +242,7 @@ public class UserService {
                 if (user.getPassword() == null) {
                     // OAuth-only user setting first password
                     user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
+                    refreshToken = true;
                     used = true;
                 } else {
                     // Password user changing password
