@@ -9,6 +9,13 @@ import com.benny1611.easyevent.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -77,10 +84,45 @@ public class UserController {
         }
     }
 
+    @PutMapping(
+            value = "/update/{userId}"
+    )
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Long userId,
+                                              @AuthenticationPrincipal AuthenticatedUser principal,
+                                              @RequestPart("userDTO") @Valid UserDTO userDTO,
+                                              @RequestPart(value = "profilePicture", required = false)
+                                              MultipartFile profilePicture) throws IOException {
+        UserDTO user = userService.updateUser(principal, userId, userDTO, profilePicture);
+        if (user != null) {
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @GetMapping("/")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UserDTO> getUser(@AuthenticationPrincipal AuthenticatedUser principal) {
-        Optional<User> userOptional = userService.findById(principal.getUserId());
+        return getUser(principal.getUserId());
+    }
+
+    @GetMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDTO> getSpecificUser(@PathVariable Long userId) {
+        return getUser(userId);
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public PagedModel<EntityModel<UserDTO>> getAllUsers(@PageableDefault(size = 20, sort = "registeredAt", direction = Sort.Direction.DESC) Pageable pageable,
+                                                        PagedResourcesAssembler<UserDTO> assembler) {
+        Page<UserDTO> page = userService.getAllUsers(pageable);
+        return assembler.toModel(page);
+    }
+
+    private ResponseEntity<UserDTO> getUser(Long userId) {
+        Optional<User> userOptional = userService.findById(userId);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             UserDTO userDTO = new UserDTO();

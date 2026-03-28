@@ -17,6 +17,8 @@ public class UserDTO {
     private String oldPassword;
     private String newPassword;
     private String token;
+    private Long id;
     private boolean active;
     private boolean isLocalPasswordSet;
+    private boolean isAdmin;
 }

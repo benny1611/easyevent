@@ -1,5 +1,6 @@
 package com.benny1611.easyevent.service;
 
+import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.RoleRepository;
 import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.dao.UserStateRepository;
@@ -10,11 +11,15 @@ import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
 import com.benny1611.easyevent.util.JwtUtils;
 import com.benny1611.easyevent.util.LocaleProvider;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,10 +31,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.OffsetDateTime;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -185,6 +188,16 @@ public class UserService {
         }
     }
 
+    public UserDTO updateUser(AuthenticatedUser principal, Long userId, @Valid UserDTO userDTO, MultipartFile profilePicture) throws IOException {
+        User userToBeChanged = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        boolean isUserToBeChangedAdmin = userToBeChanged.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase("ROLE_ADMIN"));
+        if (!isUserToBeChangedAdmin || principal.getUserId().longValue() == userId.longValue()) {
+            return updateUser(userId, userDTO, profilePicture);
+        } else {
+            return null;
+        }
+    }
+
     public UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
         Optional<User> userOptional = userRepository.findById(id);
         UserDTO result = null;
@@ -264,5 +277,29 @@ public class UserService {
             }
         }
         return result;
+    }
+
+    public Page<UserDTO> getAllUsers(Pageable pageable) {
+        Page<Long> page = userRepository.findUserIds(pageable);
+        List<User> users = userRepository.findAllByIdWithRoles(page.getContent());
+
+        Map<Long, User> userMap = users.stream().collect(Collectors.toMap(User::getId, Function.identity()));
+        List<UserDTO> dtos = page.getContent().stream()
+                .map(userMap::get)
+                .map(user -> {
+                    UserDTO userDTO = new UserDTO();
+                    userDTO.setName(user.getName());
+                    userDTO.setActive(user.isActive());
+                    userDTO.setProfilePicture(user.getProfilePictureUrl());
+                    userDTO.setEmail(user.getEmail());
+                    userDTO.setLanguage(user.getLanguage());
+                    userDTO.setId(user.getId());
+
+                    boolean isAdmin = user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase("ROLE_ADMIN"));
+
+                    userDTO.setAdmin(isAdmin);
+                    return userDTO;
+                }).toList();
+        return new PageImpl<>(dtos, pageable, page.getTotalElements());
     }
 }
