@@ -69,8 +69,10 @@ const ProfilePage = () => {
       null,
       null,
       null,
+      null,
       data.active,
       data.oauthUser,
+      false
     );
     if (userDTO.name) {
       setForm((prev) => ({
@@ -265,8 +267,10 @@ const ProfilePage = () => {
         oldPass,
         newPass,
         null,
+        null,
         true,
         false,
+        false
       );
 
       const formData = new FormData();

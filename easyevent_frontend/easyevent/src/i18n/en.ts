@@ -8,6 +8,7 @@ const en = {
         create: "Create",
         join: "Join",
         profile: "Profile",
+        admin: "Admin",
         dashboard: "Dashboard",
         account: "Account"
     },

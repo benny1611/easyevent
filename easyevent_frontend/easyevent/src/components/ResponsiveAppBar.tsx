@@ -21,7 +21,8 @@ import { ENV } from "../config/env";
 
 function ResponsiveAppBar() {
   const { translation } = useI18n();
-  const { isAuthenticated, logout, profilePictureUrl, username } = useAuth();
+  const { isAuthenticated, roles, logout, profilePictureUrl, username } =
+    useAuth();
   const navigate = useNavigate();
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
     null,
@@ -50,10 +51,18 @@ function ResponsiveAppBar() {
     setAnchorElUser(null);
   };
 
-  const handleProfile = () => {
-    navigate("/profile");
+  const handleForwardAndCloseMenu = (path: string) => {
+    navigate("/" + path);
     setAnchorElUser(null);
-  }
+  };
+
+  const handleProfile = () => {
+    handleForwardAndCloseMenu("profile");
+  };
+
+  const handleAmin = () => {
+    handleForwardAndCloseMenu("admin");
+  };
 
   return (
     <AppBar position="fixed" color="default">
@@ -225,76 +234,79 @@ function ResponsiveAppBar() {
               </Button>
             )}
           </Box>
-          {
-            isAuthenticated ? (
-              <Box sx={{ flexGrow: 0 }}>
-                <Tooltip title="Open settings">
-                  <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                    <Avatar
-                      alt={username}
-                      src={
-                        profilePictureUrl
-                          ? `${ENV.BARE_URL_BASE}${profilePictureUrl}`
-                          : undefined
-                      }
-                    >
-                      {" "}
-                      {username?.charAt(0).toUpperCase()}{" "}
-                    </Avatar>
-                  </IconButton>
-                </Tooltip>
-                <Menu
-                  sx={{ mt: "45px" }}
-                  id="menu-appbar"
-                  anchorEl={anchorElUser}
-                  anchorOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
-                  open={Boolean(anchorElUser)}
-                  onClose={handleCloseUserMenu}
+          {isAuthenticated ? (
+            <Box sx={{ flexGrow: 0 }}>
+              <Tooltip title="Open settings">
+                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                  <Avatar
+                    alt={username}
+                    src={
+                      profilePictureUrl
+                        ? `${ENV.BARE_URL_BASE}${profilePictureUrl}`
+                        : undefined
+                    }
+                  >
+                    {" "}
+                    {username?.charAt(0).toUpperCase()}{" "}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+              <Menu
+                sx={{ mt: "45px" }}
+                id="menu-appbar"
+                anchorEl={anchorElUser}
+                anchorOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                open={Boolean(anchorElUser)}
+                onClose={handleCloseUserMenu}
+              >
+                <MenuItem key={translation.nav.profile} onClick={handleProfile}>
+                  <Typography sx={{ textAlign: "center" }}>
+                    {translation.nav.profile}
+                  </Typography>
+                </MenuItem>
+                {
+                  roles.includes("ROLE_ADMIN") &&
+                  <MenuItem key={translation.nav.admin} onClick={handleAmin}>
+                    <Typography sx={{ textAlign: "center" }}>
+                      {translation.nav.admin}
+                    </Typography>
+                  </MenuItem>
+                }
+                <MenuItem
+                  key={translation.nav.account}
+                  onClick={handleCloseUserMenu}
                 >
-                  <MenuItem
-                    key={translation.nav.profile}
-                    onClick={handleProfile}
-                  >
-                    <Typography sx={{ textAlign: "center" }}>
-                      {translation.nav.profile}
-                    </Typography>
-                  </MenuItem>
-                  <MenuItem
-                    key={translation.nav.account}
-                    onClick={handleCloseUserMenu}
-                  >
-                    <Typography sx={{ textAlign: "center" }}>
-                      {translation.nav.account}
-                    </Typography>
-                  </MenuItem>
-                  <MenuItem
-                    key={translation.nav.dashboard}
-                    onClick={handleCloseUserMenu}
-                  >
-                    <Typography sx={{ textAlign: "center" }}>
-                      {translation.nav.dashboard}
-                    </Typography>
-                  </MenuItem>
-                  <MenuItem
-                    key={translation.nav.logout}
-                    onClick={logoutAndCloseMenu}
-                  >
-                    <Typography sx={{ textAlign: "center" }}>
-                      {translation.nav.logout}
-                    </Typography>
-                  </MenuItem>
-                </Menu>
-              </Box>
-            ) : null
-          }
+                  <Typography sx={{ textAlign: "center" }}>
+                    {translation.nav.account}
+                  </Typography>
+                </MenuItem>
+                <MenuItem
+                  key={translation.nav.dashboard}
+                  onClick={handleCloseUserMenu}
+                >
+                  <Typography sx={{ textAlign: "center" }}>
+                    {translation.nav.dashboard}
+                  </Typography>
+                </MenuItem>
+                <MenuItem
+                  key={translation.nav.logout}
+                  onClick={logoutAndCloseMenu}
+                >
+                  <Typography sx={{ textAlign: "center" }}>
+                    {translation.nav.logout}
+                  </Typography>
+                </MenuItem>
+              </Menu>
+            </Box>
+          ) : null}
         </Toolbar>
       </Container>
     </AppBar>
