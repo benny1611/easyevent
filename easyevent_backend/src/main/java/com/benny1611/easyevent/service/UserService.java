@@ -174,6 +174,20 @@ public class UserService {
         }
     }
 
+    public User activateUser(Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setActive(true);
+            user.setActivationToken(null);
+            user.setActivationSentAt(null);
+            userRepository.save(user);
+            return user;
+        } else {
+            return null;
+        }
+    }
+
     public void resendActivation(@Email String email) {
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
