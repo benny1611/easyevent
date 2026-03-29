@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @ValidUserDTOPasswordChange
 public class UserDTO {
@@ -18,7 +20,8 @@ public class UserDTO {
     private String newPassword;
     private String token;
     private Long id;
+    private List<String> roles;
+    private boolean isAdmin;
     private boolean active;
     private boolean isLocalPasswordSet;
-    private boolean isAdmin;
 }

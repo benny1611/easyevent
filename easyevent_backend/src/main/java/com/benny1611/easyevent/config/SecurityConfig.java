@@ -80,9 +80,10 @@ public class SecurityConfig {
 
     @Bean
     public RoleHierarchy roleHierarchy() {
-        RoleHierarchyImpl hierarchy = RoleHierarchyImpl.withDefaultRolePrefix()
-                .role("ADMIN").implies("USER").build();
-        return hierarchy;
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+                .role("SUPER_ADMIN").implies("ADMIN")
+                .role("ADMIN").implies("USER")
+                .build();
     }
 
     @Bean

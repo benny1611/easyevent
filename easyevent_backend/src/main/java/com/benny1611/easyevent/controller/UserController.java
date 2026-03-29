@@ -96,21 +96,29 @@ public class UserController {
         }
     }
 
-    @PutMapping(
-            value = "/update/{userId}"
-    )
+    @PutMapping("/update/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> updateUser(@PathVariable Long userId,
+    public ResponseEntity<UserDTO> updateUserByAdmin(@PathVariable Long userId,
                                               @AuthenticationPrincipal AuthenticatedUser principal,
                                               @RequestPart("userDTO") @Valid UserDTO userDTO,
                                               @RequestPart(value = "profilePicture", required = false)
                                               MultipartFile profilePicture) throws IOException {
-        UserDTO user = userService.updateUser(principal, userId, userDTO, profilePicture);
+        UserDTO user = userService.updateUserByAdmin(principal, userId, userDTO, profilePicture);
         if (user != null) {
             return new ResponseEntity<>(user, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @PutMapping("/update/admin/{userId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<UserDTO> updateUserBySuperAdmin(@PathVariable Long userId,
+                                                          @AuthenticationPrincipal AuthenticatedUser principal,
+                                                          @RequestPart("userDTO") @Valid UserDTO userDTO,
+                                                          @RequestPart(value = "profilePicture", required = false)
+                                                              MultipartFile profilePicture) {
+        return null;
     }
 
     @GetMapping("/")

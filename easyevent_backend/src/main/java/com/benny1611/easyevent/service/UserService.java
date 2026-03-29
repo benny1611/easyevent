@@ -202,14 +202,44 @@ public class UserService {
         }
     }
 
-    public UserDTO updateUser(AuthenticatedUser principal, Long userId, @Valid UserDTO userDTO, MultipartFile profilePicture) throws IOException {
-        User userToBeChanged = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        boolean isUserToBeChangedAdmin = userToBeChanged.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase("ROLE_ADMIN"));
-        if (!isUserToBeChangedAdmin || principal.getUserId().longValue() == userId.longValue()) {
-            return updateUser(userId, userDTO, profilePicture);
-        } else {
-            return null;
+    public UserDTO updateUserByAdmin(AuthenticatedUser principal, Long userId, @Valid UserDTO userDTO, MultipartFile profilePicture) throws IOException {
+        User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
+        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+        boolean canModify = canModifyUser(actor, target);
+        UserDTO result = null;
+        if (canModify) {
+            Optional<User> userOptional = userRepository.findById(userId);
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                result = new UserDTO();
+                boolean used = false;
+                if (userDTO.getName() != null && !userDTO.getName().equals(user.getName())) {
+                    String nameChange = userDTO.getName();
+                    user.setName(nameChange);
+                    result.setName(nameChange);
+                    used = true;
+                }
+                if (profilePicture != null && !profilePicture.isEmpty()) {
+                    String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
+                    user.setProfilePictureUrl(profilePicUrl);
+                    result.setProfilePicture(profilePicUrl);
+                    used = true;
+                }
+                if (userDTO.getLanguage() != null) {
+                    String language = userDTO.getLanguage();
+                    Locale requested = Locale.forLanguageTag(language);
+                    if (localeProvider.supports(requested)) {
+                        user.setLanguage(language);
+                        result.setLanguage(language);
+                        used = true;
+                    }
+                }
+                if (used) {
+                    userRepository.save(user);
+                }
+            }
         }
+        return result;
     }
 
     public UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
@@ -315,5 +345,22 @@ public class UserService {
                     return userDTO;
                 }).toList();
         return new PageImpl<>(dtos, pageable, page.getTotalElements());
+    }
+
+    private boolean canModifyUser(User actor, User target) {
+        if (hasRole(actor, "ROLE_SUPER_ADMIN")) {
+            return true;
+        }
+        if (hasRole(actor, "ROLE_ADMIN") && hasRole(target, "ROLE_USER")) {
+            return true;
+        }
+        if (actor.getId().longValue() == target.getId().longValue()) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean hasRole(User user, String role) {
+        return user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase(role));
     }
 }
