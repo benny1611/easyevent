@@ -50,7 +50,7 @@ public class UserController {
     }
 
     @PostMapping("/activate")
-    public ResponseEntity<Void> activateUser (@Valid @RequestBody ActivationMailRequest request) {
+    public ResponseEntity<Void> activateUser(@Valid @RequestBody ActivationMailRequest request) {
         User user = userService.activateUser(request.getToken());
         if (user != null) {
             return ResponseEntity.ok().build();
@@ -61,8 +61,8 @@ public class UserController {
 
     @PostMapping("/activate/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> activateUser(@PathVariable Long userId) {
-        User user = userService.activateUser(userId);
+    public ResponseEntity<Void> activateUserByAdmin(@PathVariable Long userId, @AuthenticationPrincipal AuthenticatedUser principal) {
+        User user = userService.activateUser(userId, principal);
         if (user != null) {
             return ResponseEntity.ok().build();
         } else {
@@ -70,11 +70,22 @@ public class UserController {
         }
     }
 
-
     @PostMapping("/resend-activation")
     public ResponseEntity<Void> resendActivation(@RequestParam @Email String email) {
         userService.resendActivation(email);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-password")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> sendResetPasswordMail(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return null;
+    }
+
+    @PostMapping("/reset-password/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> sendResetPasswordMailForUserByAdmin(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return null;
     }
 
     @PutMapping(
@@ -117,8 +128,13 @@ public class UserController {
                                                           @AuthenticationPrincipal AuthenticatedUser principal,
                                                           @RequestPart("userDTO") @Valid UserDTO userDTO,
                                                           @RequestPart(value = "profilePicture", required = false)
-                                                              MultipartFile profilePicture) {
-        return null;
+                                                              MultipartFile profilePicture) throws IOException {
+        UserDTO user = userService.updateUserBySuperAdmin(principal, userId, userDTO, profilePicture);
+        if (user != null) {
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/")

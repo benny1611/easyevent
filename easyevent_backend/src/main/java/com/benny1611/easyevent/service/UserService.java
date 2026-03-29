@@ -174,15 +174,20 @@ public class UserService {
         }
     }
 
-    public User activateUser(Long userId) {
-        Optional<User> userOptional = userRepository.findById(userId);
+    public User activateUser(Long userId, AuthenticatedUser principal) {
+        Optional<User> userOptional = userRepository.findByIdWithRoles(userId);
         if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            user.setActive(true);
-            user.setActivationToken(null);
-            user.setActivationSentAt(null);
-            userRepository.save(user);
-            return user;
+            User target = userOptional.get();
+            User agent = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("Agent user not found"));
+            if (canModifyUser(agent, target)) {
+                target.setActive(true);
+                target.setActivationToken(null);
+                target.setActivationSentAt(null);
+                userRepository.save(target);
+                return target;
+            } else {
+                return null;
+            }
         } else {
             return null;
         }
@@ -240,6 +245,17 @@ public class UserService {
             }
         }
         return result;
+    }
+
+    public UserDTO updateUserBySuperAdmin(AuthenticatedUser principal, Long userId, @Valid UserDTO userDTO, MultipartFile profilePicture) throws IOException {
+        User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
+        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+        boolean canModify = canModifyUser(actor, target);
+        if (canModify) {
+            return updateUser(userId, userDTO, profilePicture);
+        } else {
+            return null;
+        }
     }
 
     public UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
