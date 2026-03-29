@@ -273,7 +273,7 @@ function ResponsiveAppBar() {
                   </Typography>
                 </MenuItem>
                 {
-                  roles.includes("ROLE_ADMIN") &&
+                  (roles.includes("ROLE_ADMIN") || roles.includes("ROLE_SUPER_ADMIN")) &&
                   <MenuItem key={translation.nav.admin} onClick={handleAmin}>
                     <Typography sx={{ textAlign: "center" }}>
                       {translation.nav.admin}
