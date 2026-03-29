@@ -39,8 +39,6 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
@@ -252,13 +250,17 @@ public class UserService {
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean canModify = canModifyUser(actor, target);
         if (canModify) {
-            return updateUser(userId, userDTO, profilePicture);
+            return updateUser(userId, userDTO, profilePicture, false);
         } else {
             return null;
         }
     }
 
     public UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
+        return updateUser(id, userDTO, profilePicture, true);
+    }
+
+    private UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture, boolean generateToken) throws IOException {
         Optional<User> userOptional = userRepository.findById(id);
         UserDTO result = null;
         if (userOptional.isPresent()) {
@@ -328,7 +330,7 @@ public class UserService {
             }
             if (used) {
                 userRepository.save(user);
-                if (refreshToken) {
+                if (refreshToken && generateToken) {
                     String token = jwtUtils.generateToken(user);
                     result.setToken(token);
                 }
