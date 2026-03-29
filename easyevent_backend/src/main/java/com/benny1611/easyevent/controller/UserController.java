@@ -76,18 +76,6 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/reset-password")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> sendResetPasswordMail(@AuthenticationPrincipal AuthenticatedUser principal) {
-        return null;
-    }
-
-    @PostMapping("/reset-password/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> sendResetPasswordMailForUserByAdmin(@AuthenticationPrincipal AuthenticatedUser principal) {
-        return null;
-    }
-
     @PutMapping(
             value = "/update",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
