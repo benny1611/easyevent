@@ -51,17 +51,17 @@ function ResponsiveAppBar() {
     setAnchorElUser(null);
   };
 
-  const handleForwardAndCloseMenu = (path: string) => {
+  const goToPathAndCloseMenu = (path: string) => {
     navigate("/" + path);
     setAnchorElUser(null);
   };
 
   const handleProfile = () => {
-    handleForwardAndCloseMenu("profile");
+    goToPathAndCloseMenu("profile");
   };
 
-  const handleAmin = () => {
-    handleForwardAndCloseMenu("admin");
+  const handleAdmin = () => {
+    goToPathAndCloseMenu("admin");
   };
 
   return (
@@ -274,7 +274,7 @@ function ResponsiveAppBar() {
                 </MenuItem>
                 {
                   (roles.includes("ROLE_ADMIN") || roles.includes("ROLE_SUPER_ADMIN")) &&
-                  <MenuItem key={translation.nav.admin} onClick={handleAmin}>
+                  <MenuItem key={translation.nav.admin} onClick={handleAdmin}>
                     <Typography sx={{ textAlign: "center" }}>
                       {translation.nav.admin}
                     </Typography>
