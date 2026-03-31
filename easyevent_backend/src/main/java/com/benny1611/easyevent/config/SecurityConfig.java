@@ -53,11 +53,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(
-                                "/api/users/",
-                                "/api/users/create",
-                                "/api/users/update",
-                                "/api/users/activate",
-                                "/api/users/resend-activation",
+                                "/api/users/**",
                                 "/api/auth/**",
                                 "/oauth2/**",
                                 "/users/**",

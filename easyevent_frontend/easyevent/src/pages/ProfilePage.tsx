@@ -285,7 +285,6 @@ const ProfilePage = () => {
       }
 
       const apiEndpoint = `${ENV.API_BASE_URL}/users/update`;
-      console.log(formData.get("userDTO"));
 
       const response = await fetch(apiEndpoint, {
         method: "PUT",
@@ -302,7 +301,6 @@ const ProfilePage = () => {
       setSuccess(true);
       loadData();
       const data = await response.json();
-      console.log(data);
 
       if (data.token) {
         const input = new LoginResponse(data.token);

@@ -39,6 +39,9 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
 
+    @SuppressWarnings("unused")
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
@@ -360,6 +363,8 @@ public class UserService {
                     boolean isAdmin = user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase("ROLE_ADMIN"));
 
                     userDTO.setAdmin(isAdmin);
+                    List<String> roles = user.getRoles().stream().map(Role::getName).toList();
+                    userDTO.setRoles(roles);
                     return userDTO;
                 }).toList();
         return new PageImpl<>(dtos, pageable, page.getTotalElements());

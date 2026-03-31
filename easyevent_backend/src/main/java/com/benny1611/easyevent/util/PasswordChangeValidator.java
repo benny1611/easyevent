@@ -13,10 +13,24 @@ public class PasswordChangeValidator implements ConstraintValidator<ValidUserDTO
 
     @Override
     public boolean isValid(UserDTO dto, ConstraintValidatorContext context) {
-        if (dto == null) return true;
+        if (dto == null) {
+            return true;
+        }
 
         String oldPwd = dto.getOldPassword();
         String newPwd = dto.getNewPassword();
+
+        if (oldPwd == null && newPwd == null) {
+            return true;
+        }
+
+        if (oldPwd == null) {
+            context.disableDefaultConstraintViolation();
+            context.buildConstraintViolationWithTemplate(
+                    "Old password must be present when trying to change password"
+            ).addPropertyNode("newPassword").addConstraintViolation();
+            return false;
+        }
 
         if (newPwd == null || !PASSWORD_PATTERN.matcher(newPwd).matches()) {
             context.disableDefaultConstraintViolation();
