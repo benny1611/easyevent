@@ -129,7 +129,18 @@ const en = {
         pws_don_t_match: "Passwords do not match",
         changed_succesfully: "All changes applied successfully",
     },
-    languages: [{name: "English", code: "en"}, {name: "German", code: "de"}, {name: "Romanian", code: "ro"}]
+    languages: [{name: "English", code: "en"}, {name: "German", code: "de"}, {name: "Romanian", code: "ro"}],
+    admin: {
+        profilePicture: "Profile picture",
+        name: "Name",
+        you: "you",
+        email: "Email",
+        active: "Active",
+        banned: "Banned",
+        ban: "Ban",
+        role_control: "Role Control",
+        actions: "Actions",
+    }
 };
 
 export default en;
