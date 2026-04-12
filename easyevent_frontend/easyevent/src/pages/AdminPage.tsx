@@ -43,7 +43,6 @@ function TabPanel({ children, value, index }: any) {
 export default function AdminPage() {
   const { token, userId, roles } = useAuth();
   const [selectedFiles, setSelectedFiles] = useState<Record<number, File>>({});
-  const [passwords, setPasswords] = useState<Record<number, string>>({});
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -170,7 +169,6 @@ export default function AdminPage() {
         : `${ENV.API_BASE_URL}/users/update/${user.id}`;
 
       const selectedFile = selectedFiles[user.id];
-      const newPassword = passwords[user.id];
 
       const userDTO = {
         id: user.id,
@@ -179,7 +177,7 @@ export default function AdminPage() {
         language: user.language,
         active: user.active,
         roles: [user.role],
-        newPassword: isSuperAdmin && newPassword ? newPassword : null,
+        newPassword: null,
         oldPassword: null,
         profilePicture: user.profilePicture ?? null,
         token: null,
@@ -253,7 +251,6 @@ export default function AdminPage() {
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Language</TableCell>
-                {isSuperAdmin && <TableCell>Password</TableCell>}
                 <TableCell>Active</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
@@ -419,24 +416,6 @@ export default function AdminPage() {
                           <MenuItem value="ro">RO</MenuItem>
                         </Select>
                       </TableCell>
-
-                      {isSuperAdmin && (
-                        <TableCell>
-                          <TextField
-                            type="password"
-                            size="small"
-                            placeholder="New password"
-                            value={passwords[user.id] || ""}
-                            onChange={(e) =>
-                              setPasswords((prev) => ({
-                                ...prev,
-                                [user.id]: e.target.value,
-                              }))
-                            }
-                          />
-                        </TableCell>
-                      )}
-
                       <TableCell>
                         <Switch
                           checked={user.active}

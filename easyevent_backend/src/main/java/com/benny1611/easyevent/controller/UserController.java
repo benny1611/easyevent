@@ -139,7 +139,7 @@ public class UserController {
 
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
-    public PagedModel<EntityModel<UserDTO>> getAllUsers(@PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
+    public PagedModel<EntityModel<UserDTO>> getAllUsers(@PageableDefault(size = 20, sort = "name", direction = Sort.Direction.DESC) Pageable pageable,
                                                         PagedResourcesAssembler<UserDTO> assembler) {
         Page<UserDTO> page = userService.getAllUsers(pageable);
         return assembler.toModel(page);

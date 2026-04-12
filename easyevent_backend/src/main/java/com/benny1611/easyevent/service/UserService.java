@@ -253,6 +253,9 @@ public class UserService {
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean canModify = canModifyUser(actor, target);
         if (canModify) {
+            if (userDTO.getOldPassword() != null || userDTO.getNewPassword() != null) {
+                throw new RuntimeException("Password can't be changed by admin");
+            }
             return updateUser(userId, userDTO, profilePicture, false);
         } else {
             return null;
