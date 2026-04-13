@@ -2,26 +2,21 @@ package com.benny1611.easyevent.dto;
 
 import com.benny1611.easyevent.util.ValidUserDTOPasswordChange;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-
-import java.util.List;
 
 @Data
 @ValidUserDTOPasswordChange
 public class UserDTO {
-    @NotBlank
-    @Email(message = "Email must be present and valid")
-    private String email;
-    private String name;
+    @NotNull
+    private Long id;
     private String profilePicture;
+    private String name;
+    @Email
+    private String email;
     private String language;
     private String oldPassword;
     private String newPassword;
     private String token;
-    private Long id;
-    private List<String> roles;
-    private boolean isAdmin;
-    private boolean active;
     private boolean isLocalPasswordSet;
 }

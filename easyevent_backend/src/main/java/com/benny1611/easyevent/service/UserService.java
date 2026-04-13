@@ -4,7 +4,9 @@ import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.RoleRepository;
 import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.dao.UserStateRepository;
+import com.benny1611.easyevent.dto.ChangeUserRequest;
 import com.benny1611.easyevent.dto.CreateUserRequest;
+import com.benny1611.easyevent.dto.ListUserResponse;
 import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
@@ -154,8 +156,20 @@ public class UserService {
         return user;
     }
 
-    public Optional<User> findById(Long id) {
-        return userRepository.findById(id);
+    public UserDTO findById(Long id) {
+        Optional<User> userOptional = userRepository.findById(id);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            UserDTO userDTO = new UserDTO();
+            userDTO.setEmail(user.getEmail());
+            userDTO.setName(user.getName());
+            userDTO.setLanguage(user.getLanguage());
+            userDTO.setProfilePicture(user.getProfilePictureUrl());
+            userDTO.setLocalPasswordSet(user.getPassword() == null);
+            return userDTO;
+        } else {
+            return null;
+        }
     }
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
@@ -208,37 +222,36 @@ public class UserService {
         }
     }
 
-    public UserDTO updateUserByAdmin(AuthenticatedUser principal, Long userId, @Valid UserDTO userDTO, MultipartFile profilePicture) throws IOException {
+    public ListUserResponse updateUserByAdmin(AuthenticatedUser principal, Long userId, @Valid ChangeUserRequest userDTO, MultipartFile profilePicture) throws IOException {
         User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean canModify = canModifyUser(actor, target);
-        UserDTO result = null;
+        ListUserResponse result = null;
         if (canModify) {
             Optional<User> userOptional = userRepository.findById(userId);
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
-                result = new UserDTO();
+                result = new ListUserResponse();
+                result.setId(user.getId());
+                result.setActive(user.isActive());
+                result.setEmail(user.getEmail());
+                result.setProfilePicture(user.getProfilePictureUrl());
+                result.setBanned(false); //TODO: Change when the table is ready
+                List<String> roles = target.getRoles().stream().map(Role::getName).toList();
+                result.setRoles(roles);
                 boolean used = false;
                 if (userDTO.getName() != null && !userDTO.getName().equals(user.getName())) {
                     String nameChange = userDTO.getName();
                     user.setName(nameChange);
                     result.setName(nameChange);
                     used = true;
+                } else {
+                    result.setName(user.getName());
                 }
                 if (profilePicture != null && !profilePicture.isEmpty()) {
                     String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
                     user.setProfilePictureUrl(profilePicUrl);
-                    result.setProfilePicture(profilePicUrl);
                     used = true;
-                }
-                if (userDTO.getLanguage() != null) {
-                    String language = userDTO.getLanguage();
-                    Locale requested = Locale.forLanguageTag(language);
-                    if (localeProvider.supports(requested)) {
-                        user.setLanguage(language);
-                        result.setLanguage(language);
-                        used = true;
-                    }
                 }
                 if (used) {
                     userRepository.save(user);
@@ -248,15 +261,35 @@ public class UserService {
         return result;
     }
 
-    public UserDTO updateUserBySuperAdmin(AuthenticatedUser principal, Long userId, @Valid UserDTO userDTO, MultipartFile profilePicture) throws IOException {
+    public ListUserResponse updateUserBySuperAdmin(AuthenticatedUser principal, Long userId, @Valid ChangeUserRequest changeUserRequest, MultipartFile profilePicture) throws IOException {
         User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean canModify = canModifyUser(actor, target);
         if (canModify) {
-            if (userDTO.getOldPassword() != null || userDTO.getNewPassword() != null) {
-                throw new RuntimeException("Password can't be changed by admin");
+            ListUserResponse response = new ListUserResponse();
+            boolean mailChanged = false;
+            String newMailAddress = changeUserRequest.getEmail();
+            if (newMailAddress != null) {
+                if (!newMailAddress.isBlank()) { // just to be sure
+                    mailChanged = changeMailAddress(newMailAddress, target, false);
+                }
             }
-            return updateUser(userId, userDTO, profilePicture, false);
+
+            String newName = changeUserRequest.getName();
+            boolean nameChanged = changeName(newName, target);
+
+            if (nameChanged || mailChanged) {
+                userRepository.save(target);
+            }
+            response.setId(target.getId());
+            response.setName(target.getName());
+            response.setEmail(target.getEmail());
+            response.setProfilePicture(target.getProfilePictureUrl());
+            response.setActive(target.isActive());
+            response.setBanned(false); //TODO: fix when the table is ready
+            List<String> roles = target.getRoles().stream().map(Role::getName).toList();
+            response.setRoles(roles);
+            return response;
         } else {
             return null;
         }
@@ -271,38 +304,27 @@ public class UserService {
         UserDTO result = null;
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            String emailChange = userDTO.getEmail();
             result = new UserDTO();
-            result.setActive(user.isActive());
             result.setLocalPasswordSet(user.getPassword() != null);
             boolean used = false;
             boolean refreshToken = false;
-            if (emailChange != null && !emailChange.equalsIgnoreCase(user.getEmail())) {
-                Optional<User> checkIfEmailAlreadyExists = userRepository.findByEmail(emailChange);
-                if (checkIfEmailAlreadyExists.isEmpty()) {
-                    user.setEmail(emailChange);
-                    user.setActive(false);
 
-                    UUID activationToken = UUID.randomUUID();
-                    user.setActivationToken(activationToken);
-                    user.setActivationSentAt(OffsetDateTime.now());
-
-                    mailService.sendActivationEmail(user);
-                    result.setEmail(emailChange);
-                    result.setActive(false);
-                    used = true;
-                    refreshToken = true;
-                } else {
-                    throw new IllegalArgumentException("Email already in use");
-                }
-            }
-            if (userDTO.getName() != null && !userDTO.getName().equals(user.getName())) {
-                String nameChange = userDTO.getName();
-                user.setName(nameChange);
-                result.setName(nameChange);
+            String newMailAddress = userDTO.getEmail();
+            boolean mailChanged = changeMailAddress(newMailAddress, user, true);
+            if (mailChanged) {
+                result.setEmail(newMailAddress);
                 used = true;
                 refreshToken = true;
             }
+
+            String newName = userDTO.getName();
+            boolean nameChanged = changeName(newName, user);
+            if (nameChanged) {
+                result.setName(newName);
+                used = true;
+                refreshToken = true;
+            }
+
             if (profilePicture != null && !profilePicture.isEmpty()) {
                 String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
                 user.setProfilePictureUrl(profilePicUrl);
@@ -310,6 +332,7 @@ public class UserService {
                 used = true;
                 refreshToken = true;
             }
+
             if (userDTO.getLanguage() != null) {
                 String language = userDTO.getLanguage();
                 Locale requested = Locale.forLanguageTag(language);
@@ -319,6 +342,7 @@ public class UserService {
                     used = true;
                 }
             }
+
             if (userDTO.getNewPassword() != null) {
                 if (user.getPassword() == null) {
                     // OAuth-only user setting first password
@@ -334,6 +358,7 @@ public class UserService {
                     used = true;
                 }
             }
+
             if (used) {
                 userRepository.save(user);
                 if (refreshToken && generateToken) {
@@ -347,30 +372,59 @@ public class UserService {
         return result;
     }
 
-    public Page<UserDTO> getAllUsers(Pageable pageable) {
+    public Page<ListUserResponse> getAllUsers(Pageable pageable) {
         Page<Long> page = userRepository.findUserIds(pageable);
         List<User> users = userRepository.findAllByIdWithRoles(page.getContent());
 
         Map<Long, User> userMap = users.stream().collect(Collectors.toMap(User::getId, Function.identity()));
-        List<UserDTO> dtos = page.getContent().stream()
+        List<ListUserResponse> dtos = page.getContent().stream()
                 .map(userMap::get)
                 .map(user -> {
-                    UserDTO userDTO = new UserDTO();
-                    userDTO.setName(user.getName());
-                    userDTO.setActive(user.isActive());
-                    userDTO.setProfilePicture(user.getProfilePictureUrl());
-                    userDTO.setEmail(user.getEmail());
-                    userDTO.setLanguage(user.getLanguage());
+                    ListUserResponse userDTO = new ListUserResponse();
                     userDTO.setId(user.getId());
-
-                    boolean isAdmin = user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase("ROLE_ADMIN"));
-
-                    userDTO.setAdmin(isAdmin);
+                    userDTO.setName(user.getName());
+                    userDTO.setEmail(user.getEmail());
+                    userDTO.setProfilePicture(user.getProfilePictureUrl());
+                    userDTO.setActive(user.isActive());
+                    userDTO.setBanned(false); // TODO: change when the table is ready
                     List<String> roles = user.getRoles().stream().map(Role::getName).toList();
                     userDTO.setRoles(roles);
                     return userDTO;
                 }).toList();
         return new PageImpl<>(dtos, pageable, page.getTotalElements());
+    }
+
+    private boolean changeMailAddress(String newMailAddress, User user, boolean sendActivationMail) {
+        if (newMailAddress != null && !newMailAddress.equalsIgnoreCase(user.getEmail())) {
+            Optional<User> checkIfEmailAlreadyExists = userRepository.findByEmail(newMailAddress);
+            if (checkIfEmailAlreadyExists.isEmpty()) {
+                user.setEmail(newMailAddress);
+
+                if (sendActivationMail) {
+                    user.setActive(false);
+
+                    UUID activationToken = UUID.randomUUID();
+                    user.setActivationToken(activationToken);
+                    user.setActivationSentAt(OffsetDateTime.now());
+
+                    mailService.sendActivationEmail(user);
+                }
+                return true;
+            } else {
+                throw new IllegalArgumentException("Email already in use");
+            }
+        } else {
+            return false;
+        }
+    }
+
+    private boolean changeName(String newName, User user) {
+        if (newName != null && !newName.equals(user.getName())) {
+            user.setName(newName);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private boolean canModifyUser(User actor, User target) {

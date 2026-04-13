@@ -7,7 +7,7 @@ type AuthContextType = {
   roles: string[];
   profilePictureUrl: string | null;
   username: string;
-  userId: number|null;
+  userId: number | null;
   isAuthenticated: boolean;
   isLocalPasswordSet: boolean;
   hasRole: (role: string) => boolean;
@@ -28,7 +28,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem(STORAGE_KEY),
   );
-  const [payload, setPayload] = useState<JwtPayload | null>(null);
+  const [payload, setPayload] = useState<JwtPayload | null>(() => {
+    const initialToken = localStorage.getItem(STORAGE_KEY);
+    if (initialToken) {
+      try {
+        return decodeJwt(initialToken);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
 
   useEffect(() => {
     if (!token) {

@@ -131,6 +131,7 @@ const en = {
     },
     languages: [{name: "English", code: "en"}, {name: "German", code: "de"}, {name: "Romanian", code: "ro"}],
     admin: {
+        panel: "Admin Panel",
         profilePicture: "Profile picture",
         name: "Name",
         you: "you",

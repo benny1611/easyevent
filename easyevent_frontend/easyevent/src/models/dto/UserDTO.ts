@@ -1,4 +1,5 @@
 export class UserDTO {
+    id: number;
     email: string;
     name: string;
     profilePicture: string|null;
@@ -6,12 +7,9 @@ export class UserDTO {
     oldPassword: string|null;
     newPassword: string|null;
     token: string|null;
-    id: number|null;
-    active: boolean;
     isLocalPasswordSet: boolean;
-    isAdmin: boolean;
 
-    constructor(email: string, name: string, profilePicture: string|null, language: string|null, oldPassword: string|null, newPassword: string|null, token: string|null, id: number|null, active: boolean, isLocalPasswordSet: boolean, isAdmin: boolean) {
+    constructor(email: string, name: string, profilePicture: string|null, language: string|null, oldPassword: string|null, newPassword: string|null, token: string|null, id: number, isLocalPasswordSet: boolean) {
         this.email = email;
         this.name = name;
         this.profilePicture = profilePicture;
@@ -20,9 +18,7 @@ export class UserDTO {
         this.newPassword = newPassword;
         this.token = token;
         this.id = id;
-        this.active = active;
         this.isLocalPasswordSet = isLocalPasswordSet;
-        this.isAdmin = isAdmin;
     }
 }
 

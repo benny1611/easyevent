@@ -27,7 +27,7 @@ import LoginResponse from "../models/dto/LoginResponse";
 
 const ProfilePage = () => {
   const { translation } = useI18n();
-  const { profilePictureUrl, token, isLocalPasswordSet, login } = useAuth();
+  const { profilePictureUrl, token, isLocalPasswordSet, userId, login } = useAuth();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -69,10 +69,8 @@ const ProfilePage = () => {
       null,
       null,
       null,
-      null,
-      data.active,
-      data.oauthUser,
-      false
+      userId!,
+      data.oauthUser
     );
     if (userDTO.name) {
       setForm((prev) => ({
@@ -267,9 +265,7 @@ const ProfilePage = () => {
         oldPass,
         newPass,
         null,
-        null,
-        true,
-        false,
+        userId!,
         false
       );
 

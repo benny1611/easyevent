@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -16,6 +16,8 @@ import {
   DataGrid,
   type GridColDef,
   type GridSortModel,
+  getGridStringOperators,
+  getGridSingleSelectOperators,
 } from "@mui/x-data-grid";
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -26,17 +28,40 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useAuth } from "../auth/AuthContext";
 import { ENV } from "../config/env";
 import { useI18n } from "../i18n/i18nContext";
+import ChangeUserRequest from "../models/dto/ChangeUserRequest";
+import ListUserResponse from "../models/dto/ListUserResponse";
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  language: string;
-  active: boolean;
-  banned: boolean;
-  profilePicture?: string;
-}
+const EditableCellInput = ({
+  value,
+  onSave,
+  disabled,
+}: {
+  value: string;
+  onSave: (val: string) => void;
+  disabled?: boolean;
+}) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  // Sync local state if the external data changes (e.g. after a fetch)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  return (
+    <TextField
+      value={localValue}
+      size="small"
+      disabled={disabled}
+      onChange={(e) => setLocalValue(e.target.value)}
+      // Important: only update the heavy global state when the user is done
+      onBlur={() => {
+        if (localValue !== value) {
+          onSave(localValue);
+        }
+      }}
+    />
+  );
+};
 
 export default function AdminPage() {
   const { token, userId, roles } = useAuth();
@@ -49,7 +74,7 @@ export default function AdminPage() {
 
   const isSuperAdmin = currentUser.role === "ROLE_SUPER_ADMIN";
 
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<ListUserResponse[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<Record<number, File>>({});
   const [loading, setLoading] = useState(false);
 
@@ -68,16 +93,16 @@ export default function AdminPage() {
   });
 
   // FIXED permission logic
-  const canEdit = (target: User) => {
+  const canEdit = (target: ListUserResponse) => {
     const isSelf = target.id === currentUser.id;
 
     if (isSuperAdmin) {
       if (isSelf) return true;
-      return target.role !== "ROLE_SUPER_ADMIN";
+      return target.roles[0] !== "ROLE_SUPER_ADMIN";
     }
 
     if (currentUser.role === "ROLE_ADMIN") {
-      return isSelf || target.role === "ROLE_USER";
+      return isSelf || target.roles[0] === "ROLE_USER";
     }
 
     return false;
@@ -98,22 +123,18 @@ export default function AdminPage() {
 
     const data = await res.json();
 
-    const mapped = data._embedded.userDTOList.map((u: any) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      language: u.language,
-      active: u.active,
-      banned: u.banned ?? false,
-      role: u.roles?.includes("ROLE_SUPER_ADMIN")
-        ? "ROLE_SUPER_ADMIN"
-        : u.roles?.includes("ROLE_ADMIN")
-          ? "ROLE_ADMIN"
-          : "ROLE_USER",
-      profilePicture: u.profilePicture
-        ? `${ENV.BARE_URL_BASE}${u.profilePicture}`
-        : undefined,
-    }));
+    const mapped = data._embedded.listUserResponseList.map(
+      (u: any) =>
+        new ListUserResponse(
+          u.id,
+          u.name,
+          u.email,
+          u.profilePicture,
+          u.active,
+          u.banned,
+          u.roles,
+        ),
+    );
 
     setUsers(mapped);
     setRowCount(data.page.totalElements);
@@ -124,13 +145,17 @@ export default function AdminPage() {
     fetchUsers();
   }, [page, pageSize, sortModel]);
 
-  const handleChange = (id: number, field: keyof User, value: any) => {
+  const handleChange = (
+    id: number,
+    field: keyof ListUserResponse,
+    value: any,
+  ) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === id ? { ...u, [field]: value } : u)),
     );
   };
 
-  const handleSave = async (user: User) => {
+  const handleSave = async (user: ListUserResponse) => {
     try {
       const endpoint = isSuperAdmin
         ? `${ENV.API_BASE_URL}/users/update/admin/${user.id}`
@@ -138,24 +163,14 @@ export default function AdminPage() {
 
       const formData = new FormData();
 
-      const userDTO = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        language: user.language,
-        active: user.active,
-        roles: [user.role],
-        newPassword: null,
-        oldPassword: null,
-        profilePicture: user.profilePicture ?? null,
-        token: null,
-        isAdmin: user.role === "ROLE_ADMIN",
-        isLocalPasswordSet: true,
-      };
+      const changeUserRequest: ChangeUserRequest = new ChangeUserRequest(
+        user.email,
+        user.name,
+      );
 
       formData.append(
-        "userDTO",
-        new Blob([JSON.stringify(userDTO)], {
+        "changeUserRequest",
+        new Blob([JSON.stringify(changeUserRequest)], {
           type: "application/json",
         }),
       );
@@ -186,211 +201,258 @@ export default function AdminPage() {
     }
   };
 
-  const toggleBan = (user: User) => {
+  const toggleBan = (user: ListUserResponse) => {
     if (!canEdit(user)) return;
     handleChange(user.id, "banned", !user.banned);
   };
 
-  const handleRoleChange = (user: User, newRole: string) => {
+  const handleRoleChange = (user: ListUserResponse, newRole: string) => {
     if (!canEdit(user)) return;
-    handleChange(user.id, "role", newRole);
+    handleChange(user.id, "roles", newRole);
   };
 
   // Columns
-  const columns: GridColDef[] = [
-    {
-      field: translation.admin.profilePicture,
-      headerName: "",
-      width: 90,
-      sortable: false,
-      renderCell: (params) => {
-        const user = params.row;
-        const editable = canEdit(user);
+  const columns: GridColDef[] = useMemo(
+    () => [
+      {
+        field: translation.admin.profilePicture,
+        headerName: "",
+        width: 90,
+        sortable: false,
+        renderCell: (params: { row: any }) => {
+          const user = params.row;
+          const editable = canEdit(user);
 
-        return (
-          <Box sx={{ position: "relative", width: 40, height: 40 }}>
-            <Avatar
-              src={
-                selectedFiles[user.id]
-                  ? URL.createObjectURL(selectedFiles[user.id])
-                  : user.profilePicture
-              }
-            />
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center", // Center the avatar in the cell
+                height: "100%",
+              }}
+            >
+              <Box sx={{ position: "relative", width: 40, height: 40 }}>
+                <Avatar
+                  sx={{ width: 40, height: 40 }}
+                  src={
+                    selectedFiles[user.id]
+                      ? URL.createObjectURL(selectedFiles[user.id])
+                      : `${ENV.BARE_URL_BASE}${user.profilePicture}`
+                  }
+                />
 
-            {editable && (
-              <Box
-                component="label"
-                sx={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  bgcolor: "transparent", // Use "transparent" for clarity
-                  transition: "background-color 0.2s", // Optional: makes the fade smoother
-                  "&:hover": {
-                    bgcolor: "rgba(0,0,0,0.4)",
-                  },
-                  // Target the icon when this Box is hovered
-                  "&:hover .upload-icon": {
-                    opacity: 1,
-                  },
-                }}
-              >
-                <input
-                  hidden
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setSelectedFiles((prev) => ({
-                        ...prev,
-                        [user.id]: file,
-                      }));
-                    }
-                  }}
-                />
-                <CloudUploadIcon
-                  className="upload-icon" // Add a class to target it
-                  sx={{
-                    color: "white",
-                    opacity: 0, // Hidden by default
-                    transition: "opacity 0.2s", // Smooth fade in
-                  }}
-                />
+                {editable && (
+                  <Box
+                    component="label"
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "50%",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: "transparent", // Use "transparent" for clarity
+                      transition: "background-color 0.2s", // Optional: makes the fade smoother
+                      "&:hover": {
+                        bgcolor: "rgba(0,0,0,0.4)",
+                      },
+                      // Target the icon when this Box is hovered
+                      "&:hover .upload-icon": {
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    <input
+                      hidden
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSelectedFiles((prev) => ({
+                            ...prev,
+                            [user.id]: file,
+                          }));
+                        }
+                      }}
+                    />
+                    <CloudUploadIcon
+                      className="upload-icon" // Add a class to target it
+                      sx={{
+                        color: "white",
+                        opacity: 0, // Hidden by default
+                        transition: "opacity 0.2s", // Smooth fade in
+                      }}
+                    />
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
-        );
+            </Box>
+          );
+        },
       },
-    },
-    {
-      field: translation.admin.name,
-      headerName: translation.admin.name,
-      flex: 1,
-      renderCell: (params) => {
-        const user = params.row;
-        const editable = canEdit(user);
+      {
+        field: "name",
+        headerName: translation.admin.name,
+        flex: 1,
+        filterOperators: getGridStringOperators().filter(
+          (operator) => operator.value !== "isAnyOf",
+        ),
+        renderCell: (params) => {
+          const user = params.row;
+          const editable = canEdit(user);
 
-        return (
-          <Box display="flex" gap={1} alignItems="center">
-            <TextField
-              value={user.name}
-              size="small"
-              disabled={!editable}
-              onChange={(e) => handleChange(user.id, "name", e.target.value)}
-            />
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                height: "100%",
+              }}
+            >
+              <EditableCellInput
+                value={user.name}
+                disabled={!editable}
+                onSave={(newValue) => handleChange(user.id, "name", newValue)}
+              />
 
-            <Chip
-              label={user.role.replace("ROLE_", "").toLowerCase()}
-              size="small"
-            />
+              <Chip
+                label={user.roles[0].replace("ROLE_", "").toLowerCase()}
+                size="small"
+              />
 
-            {user.id === currentUser.id && <Chip label={translation.admin.you} size="small" />}
-          </Box>
-        );
+              {user.id === currentUser.id && (
+                <Chip label={translation.admin.you} size="small" />
+              )}
+            </Box>
+          );
+        },
       },
-    },
-    {
-      field: translation.admin.email,
-      headerName: translation.admin.email,
-      flex: 1,
-      renderCell: (params) => {
-        const user = params.row;
+      {
+        field: "email",
+        headerName: translation.admin.email,
+        flex: 1,
+        filterOperators: getGridStringOperators().filter(
+          (operator) => operator.value !== "isAnyOf",
+        ),
+        renderCell: (params) => {
+          const user = params.row;
 
-        return (
-          <TextField
-            value={user.email}
-            size="small"
-            disabled={!isSuperAdmin}
-            onChange={(e) => handleChange(user.id, "email", e.target.value)}
-          />
-        );
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+              <EditableCellInput
+                value={user.email}
+                disabled={!isSuperAdmin}
+                onSave={(newValue) => handleChange(user.id, "email", newValue)}
+              />
+            </Box>
+          );
+        },
       },
-    },
-    {
-      field: translation.admin.active,
-      headerName: translation.admin.active,
-      width: 100,
-      sortable: false,
-      renderCell: (params) => <Checkbox checked={params.value} disabled />,
-    },
-    {
-      field: translation.admin.banned,
-      headerName: translation.admin.ban,
-      width: 100,
-      sortable: false,
-      renderCell: (params) => {
-        const user = params.row;
-
-        return (
-          <IconButton
-            disabled={!canEdit(user)}
-            onClick={() => toggleBan(user)}
-            color={user.banned ? "success" : "error"}
-          >
-            {user.banned ? <CheckCircleIcon /> : <BlockIcon />}
-          </IconButton>
-        );
+      {
+        field: translation.admin.active,
+        headerName: translation.admin.active,
+        width: 100,
+        sortable: false,
+        filterOperators: getGridStringOperators().filter(
+          (operator) => operator.value !== "isAnyOf",
+        ),
+        renderCell: (params) => {
+          const user = params.row;
+          return <Checkbox checked={user.active} disabled />;
+        },
       },
-    },
+      {
+        field: translation.admin.banned,
+        headerName: translation.admin.ban,
+        width: 100,
+        sortable: false,
+        renderCell: (params) => {
+          const user = params.row;
 
-    // ONLY FOR SUPER ADMIN
-    ...(isSuperAdmin
-      ? [
-          {
-            field: translation.admin.role_control,
-            headerName: translation.admin.role_control,
-            width: 160,
-            sortable: false,
-            renderCell: (params: any) => {
-              const user = params.row;
+          return (
+            <IconButton
+              disabled={!canEdit(user)}
+              onClick={() => toggleBan(user)}
+              color={user.banned ? "success" : "error"}
+            >
+              {user.banned ? <CheckCircleIcon /> : <BlockIcon />}
+            </IconButton>
+          );
+        },
+      },
 
-              if (user.role === "ROLE_SUPER_ADMIN") return null;
+      // ONLY FOR SUPER ADMIN
+      ...(isSuperAdmin
+        ? [
+            {
+              field: "role",
+              type: "singleSelect" as const,
+              valueOptions: ["ROLE_USER", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"],
+              valueGetter: (_value: any, row: { roles: string[] }) => {
+                return row.roles?.[0] || "";
+              },
+              filterOperators: getGridSingleSelectOperators().filter(
+                (operator) => operator.value !== "isAnyOf",
+              ),
+              headerName: translation.admin.role_control,
+              width: 160,
+              sortable: false,
+              renderCell: (params: any) => {
+                const user = params.row;
 
-              return (
-                <Select
-                  size="small"
-                  value={user.role}
-                  onChange={(e) => handleRoleChange(user, e.target.value)}
-                >
-                  <MenuItem value="ROLE_USER">user</MenuItem>
-                  <MenuItem value="ROLE_ADMIN">admin</MenuItem>
-                </Select>
-              );
+                if (user.roles[0] === "ROLE_SUPER_ADMIN") return null;
+
+                return (
+                  <Select
+                    size="small"
+                    value={user.roles[0]}
+                    onChange={(e) => handleRoleChange(user, e.target.value)}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: "100%",
+                    }}
+                  >
+                    <MenuItem value="ROLE_USER">user</MenuItem>
+                    <MenuItem value="ROLE_ADMIN">admin</MenuItem>
+                  </Select>
+                );
+              },
             },
-          },
-        ]
-      : []),
+          ]
+        : []),
 
-    {
-      field: translation.admin.actions,
-      headerName: "",
-      width: 80,
-      sortable: false,
-      renderCell: (params) => {
-        const user = params.row;
+      {
+        field: translation.admin.actions,
+        headerName: "",
+        width: 80,
+        sortable: false,
+        renderCell: (params) => {
+          const user = params.row;
 
-        return (
-          <IconButton
-            disabled={!canEdit(user)}
-            onClick={() => handleSave(user)}
-            color="primary"
-          >
-            <SaveIcon />
-          </IconButton>
-        );
+          return (
+            <IconButton
+              disabled={!canEdit(user)}
+              onClick={() => handleSave(user)}
+              color="primary"
+            >
+              <SaveIcon />
+            </IconButton>
+          );
+        },
       },
-    },
-  ];
+    ],
+    [translation, isSuperAdmin, selectedFiles, currentUser.id],
+  );
 
   return (
     <Box sx={{ mt: 4, px: 2 }}>
       <Typography variant="h4" align="center" sx={{ mb: 3 }}>
-        Admin Panel
+        {translation.admin.panel}
       </Typography>
 
       <DataGrid
