@@ -189,25 +189,6 @@ public class UserService {
         }
     }
 
-    public User activateUser(Long userId, AuthenticatedUser principal) {
-        Optional<User> userOptional = userRepository.findByIdWithRoles(userId);
-        if (userOptional.isPresent()) {
-            User target = userOptional.get();
-            User agent = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("Agent user not found"));
-            if (canModifyUser(agent, target)) {
-                target.setActive(true);
-                target.setActivationToken(null);
-                target.setActivationSentAt(null);
-                userRepository.save(target);
-                return target;
-            } else {
-                return null;
-            }
-        } else {
-            return null;
-        }
-    }
-
     public void resendActivation(@Email String email) {
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {

@@ -56,17 +56,6 @@ public class UserController {
         }
     }
 
-    @PostMapping("/activate/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> activateUserByAdmin(@PathVariable Long userId, @AuthenticationPrincipal AuthenticatedUser principal) {
-        User user = userService.activateUser(userId, principal);
-        if (user != null) {
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
     @PostMapping("/resend-activation")
     public ResponseEntity<Void> resendActivation(@RequestParam @Email String email) {
         userService.resendActivation(email);
