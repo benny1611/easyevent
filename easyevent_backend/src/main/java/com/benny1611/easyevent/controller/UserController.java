@@ -127,8 +127,8 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> unbanUserById(@PathVariable Long userId,
                                             @AuthenticationPrincipal AuthenticatedUser principal) {
-        boolean bannedSuccessfully = userService.unbanUserById(principal, userId);
-        if (bannedSuccessfully) {
+        boolean unbannedSuccessfully = userService.unbanUserById(principal, userId);
+        if (unbannedSuccessfully) {
             return new ResponseEntity<>(HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
