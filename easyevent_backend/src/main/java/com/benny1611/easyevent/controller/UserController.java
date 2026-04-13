@@ -111,6 +111,30 @@ public class UserController {
         }
     }
 
+    @PutMapping("/ban/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> banUserById(@PathVariable Long userId,
+                                            @AuthenticationPrincipal AuthenticatedUser principal) {
+        boolean bannedSuccessfully = userService.banUserById(principal, userId);
+        if (bannedSuccessfully) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PutMapping("/unban/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> unbanUserById(@PathVariable Long userId,
+                                            @AuthenticationPrincipal AuthenticatedUser principal) {
+        boolean bannedSuccessfully = userService.unbanUserById(principal, userId);
+        if (bannedSuccessfully) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @GetMapping("/")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UserDTO> getUser(@AuthenticationPrincipal AuthenticatedUser principal) {

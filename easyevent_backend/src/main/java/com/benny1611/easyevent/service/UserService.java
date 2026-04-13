@@ -277,10 +277,6 @@ public class UserService {
     }
 
     public UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
-        return updateUser(id, userDTO, profilePicture, true);
-    }
-
-    private UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture, boolean generateToken) throws IOException {
         Optional<User> userOptional = userRepository.findById(id);
         UserDTO result = null;
         if (userOptional.isPresent()) {
@@ -342,7 +338,7 @@ public class UserService {
 
             if (used) {
                 userRepository.save(user);
-                if (refreshToken && generateToken) {
+                if (refreshToken) {
                     String token = jwtUtils.generateToken(user);
                     result.setToken(token);
                 }
@@ -423,5 +419,33 @@ public class UserService {
 
     private static boolean hasRole(User user, String role) {
         return user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase(role));
+    }
+
+    public boolean banUserById(AuthenticatedUser principal, Long userId) {
+        User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
+        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+        boolean canModify = canModifyUser(actor, target);
+        if (actor.getId().longValue() == target.getId().longValue()) {
+            // A user can't ban themselves
+            return false;
+        }
+        if (canModify) {
+            //TODO: Implement logic
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean unbanUserById(AuthenticatedUser principal, Long userId) {
+        User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
+        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+        boolean canModify = canModifyUser(actor, target);
+        if (canModify) {
+            //TODO: Implement logic
+            return true;
+        } else {
+            return false;
+        }
     }
 }
