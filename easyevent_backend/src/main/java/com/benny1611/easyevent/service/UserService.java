@@ -203,47 +203,43 @@ public class UserService {
         }
     }
 
-    public ListUserResponse updateUserByAdmin(AuthenticatedUser principal, Long userId, @Valid ChangeUserRequest userDTO, MultipartFile profilePicture) throws IOException {
-        User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
+    public ListUserResponse updateUserByAdmin(AuthenticatedUser principal, Long userId, @Valid ChangeUserRequest changeUserRequest, MultipartFile profilePicture) throws IOException {
+        User target = userRepository.findByIdWithRolesAndState(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean canModify = canModifyUser(actor, target);
         ListUserResponse result = null;
         if (canModify) {
-            Optional<User> userOptional = userRepository.findById(userId);
-            if (userOptional.isPresent()) {
-                User user = userOptional.get();
-                result = new ListUserResponse();
-                result.setId(user.getId());
-                result.setActive(user.isActive());
-                result.setEmail(user.getEmail());
-                result.setProfilePicture(user.getProfilePictureUrl());
-                result.setBanned(false); //TODO: Change when the table is ready
-                List<String> roles = target.getRoles().stream().map(Role::getName).toList();
-                result.setRoles(roles);
-                boolean used = false;
-                if (userDTO.getName() != null && !userDTO.getName().equals(user.getName())) {
-                    String nameChange = userDTO.getName();
-                    user.setName(nameChange);
-                    result.setName(nameChange);
-                    used = true;
-                } else {
-                    result.setName(user.getName());
-                }
-                if (profilePicture != null && !profilePicture.isEmpty()) {
-                    String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
-                    user.setProfilePictureUrl(profilePicUrl);
-                    used = true;
-                }
-                if (used) {
-                    userRepository.save(user);
-                }
+            result = new ListUserResponse();
+            result.setId(target.getId());
+            result.setActive(target.isActive());
+            result.setEmail(target.getEmail());
+            result.setProfilePicture(target.getProfilePictureUrl());
+            result.setBanned(isUserBanned(target));
+            List<String> roles = target.getRoles().stream().map(Role::getName).toList();
+            result.setRoles(roles);
+            boolean used = false;
+            if (changeUserRequest.getName() != null && !changeUserRequest.getName().equals(target.getName())) {
+                String nameChange = changeUserRequest.getName();
+                target.setName(nameChange);
+                result.setName(nameChange);
+                used = true;
+            } else {
+                result.setName(target.getName());
+            }
+            if (profilePicture != null && !profilePicture.isEmpty()) {
+                String profilePicUrl = profileImageService.saveAsPng(profilePicture, target.getId());
+                target.setProfilePictureUrl(profilePicUrl);
+                used = true;
+            }
+            if (used) {
+                userRepository.save(target);
             }
         }
         return result;
     }
 
     public ListUserResponse updateUserBySuperAdmin(AuthenticatedUser principal, Long userId, @Valid ChangeUserRequest changeUserRequest, MultipartFile profilePicture) throws IOException {
-        User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
+        User target = userRepository.findByIdWithRolesAndState(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean canModify = canModifyUser(actor, target);
         if (canModify) {
@@ -267,7 +263,7 @@ public class UserService {
             response.setEmail(target.getEmail());
             response.setProfilePicture(target.getProfilePictureUrl());
             response.setActive(target.isActive());
-            response.setBanned(false); //TODO: fix when the table is ready
+            response.setBanned(isUserBanned(target));
             List<String> roles = target.getRoles().stream().map(Role::getName).toList();
             response.setRoles(roles);
             return response;
@@ -351,7 +347,7 @@ public class UserService {
 
     public Page<ListUserResponse> getAllUsers(Pageable pageable) {
         Page<Long> page = userRepository.findUserIds(pageable);
-        List<User> users = userRepository.findAllByIdWithRoles(page.getContent());
+        List<User> users = userRepository.findAllByIdWithRolesAndState(page.getContent());
 
         Map<Long, User> userMap = users.stream().collect(Collectors.toMap(User::getId, Function.identity()));
         List<ListUserResponse> dtos = page.getContent().stream()
@@ -363,7 +359,7 @@ public class UserService {
                     userDTO.setEmail(user.getEmail());
                     userDTO.setProfilePicture(user.getProfilePictureUrl());
                     userDTO.setActive(user.isActive());
-                    userDTO.setBanned(false); // TODO: change when the table is ready
+                    userDTO.setBanned(isUserBanned(user));
                     List<String> roles = user.getRoles().stream().map(Role::getName).toList();
                     userDTO.setRoles(roles);
                     return userDTO;
@@ -419,6 +415,15 @@ public class UserService {
 
     private static boolean hasRole(User user, String role) {
         return user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase(role));
+    }
+
+    private boolean isUserBanned(User user) {
+        UserState blockedState = userStateRepository.findByName("BLOCKED").orElseThrow(() -> new RuntimeException("Could not find active state"));
+        if (user.getState().getId() != null && blockedState.getId() != null) {
+            return user.getState().getId().longValue() == blockedState.getId().longValue();
+        } else {
+            return false;
+        }
     }
 
     public boolean banUserById(AuthenticatedUser principal, Long userId) {

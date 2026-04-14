@@ -31,12 +31,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByIdWithRoles(@Param("id") Long id);
 
     @Query("""
+    SELECT u 
+    FROM User u 
+    JOIN FETCH u.state 
+    LEFT JOIN FETCH u.roles 
+    WHERE u.id = :id
+    """)
+    Optional<User> findByIdWithRolesAndState(@Param("id") Long id);
+
+    @Query("""
     SELECT DISTINCT u
     FROM User u
+    JOIN FETCH u.state
     LEFT JOIN FETCH u.roles
     WHERE u.id IN :ids
-""")
-    List<User> findAllByIdWithRoles(@Param("ids") List<Long> ids);
+    """)
+    List<User> findAllByIdWithRolesAndState(@Param("ids") List<Long> ids);
 
     @Query("""
         SELECT DISTINCT u
