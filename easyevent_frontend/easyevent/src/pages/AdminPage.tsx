@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Tabs,
+  Tab,
   Box,
   Typography,
   Avatar,
@@ -30,6 +32,7 @@ import { ENV } from "../config/env";
 import { useI18n } from "../i18n/i18nContext";
 import ChangeUserRequest from "../models/dto/ChangeUserRequest";
 import ListUserResponse from "../models/dto/ListUserResponse";
+import BanReasonDialog from "../components/BanReasonDialog";
 
 const EditableCellInput = ({
   value,
@@ -73,6 +76,16 @@ export default function AdminPage() {
   };
 
   const isSuperAdmin = currentUser.role === "ROLE_SUPER_ADMIN";
+
+  // State for the Ban Dialog
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [userToBan, setUserToBan] = useState<ListUserResponse | null>(null);
+
+  const [currentTab, setCurrentTab] = useState(0);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
 
   const [users, setUsers] = useState<ListUserResponse[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<Record<number, File>>({});
@@ -187,7 +200,7 @@ export default function AdminPage() {
 
       setSnackbar({
         open: true,
-        message: "User updated",
+        message: translation.admin.user_updated,
         severity: "success",
       });
 
@@ -195,7 +208,7 @@ export default function AdminPage() {
     } catch {
       setSnackbar({
         open: true,
-        message: "Update failed",
+        message: translation.admin.update_failed,
         severity: "error",
       });
     }
@@ -203,7 +216,25 @@ export default function AdminPage() {
 
   const toggleBan = (user: ListUserResponse) => {
     if (!canEdit(user)) return;
-    handleChange(user.id, "banned", !user.banned);
+    if (user.banned) {
+      // If already banned, unban immediately
+      handleChange(user.id, "banned", false);
+    } else {
+      // If not banned, open dialog to get reason
+      setUserToBan(user);
+      setBanDialogOpen(true);
+    }
+  };
+
+  const handleConfirmBan = (reason: string) => {
+    if (userToBan) {
+      handleChange(userToBan.id, "banned", true);
+      // You can now use the 'reason' variable here to send to your API
+      console.log("Banning for reason:", reason);
+
+      setBanDialogOpen(false);
+      setUserToBan(null);
+    }
   };
 
   const handleRoleChange = (user: ListUserResponse, newRole: string) => {
@@ -372,6 +403,12 @@ export default function AdminPage() {
         sortable: false,
         renderCell: (params) => {
           const user = params.row;
+          const isSelf = user.id === currentUser.id;
+
+          // If it's the logged-in user, don't show the button at all
+          if (isSelf) {
+            return null;
+          }
 
           return (
             <IconButton
@@ -450,36 +487,79 @@ export default function AdminPage() {
   );
 
   return (
-    <Box sx={{ mt: 4, px: 2 }}>
+    <Box sx={{ mt: 4, px: 2, width: "100%" }}>
       <Typography variant="h4" align="center" sx={{ mb: 3 }}>
         {translation.admin.panel}
       </Typography>
 
-      <DataGrid
-        rows={users}
-        columns={columns}
-        loading={loading}
-        autoHeight
-        pagination
-        paginationMode="server"
-        sortingMode="server"
-        rowCount={rowCount}
-        pageSizeOptions={[10, 20, 50]}
-        paginationModel={{ page, pageSize }}
-        onPaginationModelChange={(model) => {
-          setPage(model.page);
-          setPageSize(model.pageSize);
-        }}
-        onSortModelChange={(model) => setSortModel(model)}
-        getRowClassName={(params) =>
-          !canEdit(params.row) ? "disabled-row" : ""
-        }
-        sx={{
-          "& .disabled-row": {
-            opacity: 0.5,
-            pointerEvents: "none",
-          },
-        }}
+      {/* Tab Navigation */}
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          aria-label="admin panel tabs"
+        >
+          <Tab
+            label={translation.admin.users}
+            id="tab-0"
+            aria-controls="tabpanel-0"
+          />
+          {/*<Tab label="Other Management" id="tab-1" aria-controls="tabpanel-1" />*/}
+        </Tabs>
+      </Box>
+
+      {/* TAB 0: USERS (Default) */}
+      <div role="tabpanel" hidden={currentTab !== 0} id="tabpanel-0">
+        {currentTab === 0 && (
+          <Box>
+            <DataGrid
+              rows={users}
+              columns={columns}
+              loading={loading}
+              autoHeight
+              pagination
+              paginationMode="server"
+              sortingMode="server"
+              rowCount={rowCount}
+              pageSizeOptions={[10, 20, 50]}
+              paginationModel={{ page, pageSize }}
+              onPaginationModelChange={(model) => {
+                setPage(model.page);
+                setPageSize(model.pageSize);
+              }}
+              onSortModelChange={(model) => setSortModel(model)}
+              getRowClassName={(params) =>
+                !canEdit(params.row) ? "disabled-row" : ""
+              }
+              sx={{
+                border: "none",
+                "& .disabled-row": {
+                  opacity: 0.5,
+                  pointerEvents: "none",
+                },
+              }}
+            />
+          </Box>
+        )}
+      </div>
+
+      {/* TAB 1: PLACEHOLDER */}
+      {/*<div role="tabpanel" hidden={currentTab !== 1} id="tabpanel-1">
+        {currentTab === 1 && (
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography variant="h6" color="text.secondary">
+              Future Management Module Goes Here
+            </Typography>
+          </Box>
+        )}
+      </div>*/}
+
+      {/* Ban Reason Dialog */}
+      <BanReasonDialog
+        open={banDialogOpen}
+        userName={userToBan?.name}
+        onClose={() => setBanDialogOpen(false)}
+        onConfirm={handleConfirmBan}
       />
 
       <Snackbar open={snackbar.open} autoHideDuration={4000}>
