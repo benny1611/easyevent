@@ -146,7 +146,6 @@ const en = {
         users: "Users",
         reason_for_ban: "Reason for ban",
         ban_text: "Please provide a mandatory reason for banning this user. This action will be logged.",
-        reason_error: "Reason is required",
         confirm_ban: "Confirm Ban",
         cancel: "Cancel",
         ban_user: "Ban User:",

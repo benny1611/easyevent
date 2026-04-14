@@ -1,5 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
 import { useState } from "react";
+import { useI18n } from "../i18n/i18nContext";
 
 interface BanDialogProps {
   open: boolean;
@@ -12,6 +13,7 @@ interface BanDialogProps {
 const BanReasonDialog = ({ open, userName, userId, onClose, onConfirm }: BanDialogProps) => {
   // Localizing the "noisy" state here prevents parent re-renders
   const [reason, setReason] = useState("");
+  const { translation } = useI18n();
 
   const handleConfirm = () => {
     if (reason.trim()) {
@@ -22,15 +24,15 @@ const BanReasonDialog = ({ open, userName, userId, onClose, onConfirm }: BanDial
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Ban User: {userName}</DialogTitle>
+      <DialogTitle>{translation.admin.ban_user} {userName}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary', mt: 1 }}>
-          Please provide a mandatory reason for banning this user.
+          {translation.admin.ban_text}
         </Typography>
         <TextField
           autoFocus
           margin="dense"
-          label="Reason for Ban"
+          label={translation.admin.reason_for_ban}
           fullWidth
           required
           error={!reason.trim()}
@@ -39,14 +41,14 @@ const BanReasonDialog = ({ open, userName, userId, onClose, onConfirm }: BanDial
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{translation.admin.cancel}</Button>
         <Button 
           onClick={handleConfirm} 
           variant="contained" 
           color="error" 
           disabled={!reason.trim()}
         >
-          Confirm Ban
+          {translation.admin.confirm_ban}
         </Button>
       </DialogActions>
     </Dialog>
