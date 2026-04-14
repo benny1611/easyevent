@@ -77,6 +77,44 @@ public class MailServiceImpl implements IMailService {
         sendMail(user.getEmail(), subject, body);
     }
 
+    @Override
+    public void sendBanMail(User user, String reason) {
+        Locale locale = resolveLocale(user);
+
+        String subject = mailMessageSource.getMessage(
+                "ban.subject",
+                null,
+                locale
+        );
+
+        String body = mailMessageSource.getMessage(
+                "ban.body",
+                new Object[]{user.getName(), reason},
+                locale
+        );
+
+        sendMail(user.getEmail(), subject, body);
+    }
+
+    @Override
+    public void sendUnbanMail(User user) {
+        Locale locale = resolveLocale(user);
+
+        String subject = mailMessageSource.getMessage(
+                "unban.subject",
+                null,
+                locale
+        );
+
+        String body = mailMessageSource.getMessage(
+                "unban.body",
+                new Object[]{user.getName()},
+                locale
+        );
+
+        sendMail(user.getEmail(), subject, body);
+    }
+
     private void sendMail(String email, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);

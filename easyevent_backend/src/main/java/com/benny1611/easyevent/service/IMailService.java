@@ -7,4 +7,6 @@ import java.util.UUID;
 public interface IMailService {
     void sendPasswordResetEmail(User user, UUID tokenId, String secret, int expiryMinutes);
     void sendActivationEmail(User user);
+    void sendBanMail(User user, String reason);
+    void sendUnbanMail(User user);
 }

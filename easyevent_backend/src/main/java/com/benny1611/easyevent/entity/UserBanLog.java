@@ -1,14 +1,18 @@
 package com.benny1611.easyevent.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "user_ban_log")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class UserBanLog {
 

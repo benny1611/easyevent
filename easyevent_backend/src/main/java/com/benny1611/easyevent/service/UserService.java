@@ -2,14 +2,13 @@ package com.benny1611.easyevent.service;
 
 import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.RoleRepository;
+import com.benny1611.easyevent.dao.UserBanLogRepository;
 import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.dao.UserStateRepository;
-import com.benny1611.easyevent.dto.ChangeUserRequest;
-import com.benny1611.easyevent.dto.CreateUserRequest;
-import com.benny1611.easyevent.dto.ListUserResponse;
-import com.benny1611.easyevent.dto.UserDTO;
+import com.benny1611.easyevent.dto.*;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
+import com.benny1611.easyevent.entity.UserBanLog;
 import com.benny1611.easyevent.entity.UserState;
 import com.benny1611.easyevent.util.JwtUtils;
 import com.benny1611.easyevent.util.LocaleProvider;
@@ -49,6 +48,7 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final ProfileImageService profileImageService;
     private final UserStateRepository userStateRepository;
+    private final UserBanLogRepository userBanLogRepository;
     private final IMailService mailService;
     private final LocaleProvider localeProvider;
     private final JwtUtils jwtUtils;
@@ -60,6 +60,7 @@ public class UserService {
                        ProfileImageService profileImageService,
                        @Qualifier("bcryptPasswordEncoder") PasswordEncoder passwordEncoder,
                        UserStateRepository userStateRepository,
+                       UserBanLogRepository userBanLogRepository,
                        IMailService mailService,
                        LocaleProvider localeProvider, JwtUtils jwtUtils) {
         this.userRepository = userRepository;
@@ -67,6 +68,7 @@ public class UserService {
         this.roleRepository = roleRepository;
         this.profileImageService = profileImageService;
         this.userStateRepository = userStateRepository;
+        this.userBanLogRepository = userBanLogRepository;
         this.mailService = mailService;
         this.localeProvider = localeProvider;
         this.jwtUtils = jwtUtils;
@@ -426,7 +428,7 @@ public class UserService {
         }
     }
 
-    public boolean banUserById(AuthenticatedUser principal, Long userId) {
+    public boolean banUserById(AuthenticatedUser principal, Long userId, BanRequest banRequest) {
         User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean canModify = canModifyUser(actor, target);
@@ -435,7 +437,13 @@ public class UserService {
             return false;
         }
         if (canModify) {
-            //TODO: Implement logic
+            UserBanLog userBanLog = new UserBanLog();
+            userBanLog.setActionType(UserBanLog.ActionType.BAN);
+            userBanLog.setAdmin(actor);
+            userBanLog.setTargetUser(target);
+            userBanLog.setReason(banRequest.getReason());
+            userBanLogRepository.save(userBanLog);
+            mailService.sendBanMail(target, banRequest.getReason());
             return true;
         } else {
             return false;
@@ -447,7 +455,13 @@ public class UserService {
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean canModify = canModifyUser(actor, target);
         if (canModify) {
-            //TODO: Implement logic
+            UserBanLog userBanLog = new UserBanLog();
+            userBanLog.setActionType(UserBanLog.ActionType.UNBAN);
+            userBanLog.setAdmin(actor);
+            userBanLog.setTargetUser(target);
+            userBanLog.setReason(null);
+            userBanLogRepository.save(userBanLog);
+            mailService.sendUnbanMail(target);
             return true;
         } else {
             return false;
