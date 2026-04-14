@@ -4,17 +4,18 @@ import { useState } from "react";
 interface BanDialogProps {
   open: boolean;
   userName?: string;
+  userId: number;
   onClose: () => void;
-  onConfirm: (reason: string) => void;
+  onConfirm: (reason: string, userId: number) => void;
 }
 
-const BanReasonDialog = ({ open, userName, onClose, onConfirm }: BanDialogProps) => {
+const BanReasonDialog = ({ open, userName, userId, onClose, onConfirm }: BanDialogProps) => {
   // Localizing the "noisy" state here prevents parent re-renders
   const [reason, setReason] = useState("");
 
   const handleConfirm = () => {
     if (reason.trim()) {
-      onConfirm(reason);
+      onConfirm(reason, userId);
       setReason(""); // Reset for next time
     }
   };

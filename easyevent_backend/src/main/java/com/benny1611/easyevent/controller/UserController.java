@@ -115,7 +115,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> banUserById(@PathVariable Long userId,
                                             @AuthenticationPrincipal AuthenticatedUser principal,
-                                            @Valid BanRequest banRequest) {
+                                            @Valid @RequestBody BanRequest banRequest) {
         boolean bannedSuccessfully = userService.banUserById(principal, userId, banRequest);
         if (bannedSuccessfully) {
             return new ResponseEntity<>(HttpStatus.OK);

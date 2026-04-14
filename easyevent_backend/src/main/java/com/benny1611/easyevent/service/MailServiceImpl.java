@@ -78,6 +78,7 @@ public class MailServiceImpl implements IMailService {
     }
 
     @Override
+    @Async
     public void sendBanMail(User user, String reason) {
         Locale locale = resolveLocale(user);
 
@@ -97,6 +98,7 @@ public class MailServiceImpl implements IMailService {
     }
 
     @Override
+    @Async
     public void sendUnbanMail(User user) {
         Locale locale = resolveLocale(user);
 

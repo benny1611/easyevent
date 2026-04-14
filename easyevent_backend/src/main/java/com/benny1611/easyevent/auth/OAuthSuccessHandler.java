@@ -58,8 +58,10 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
                         providerUserId
                 );
         User user;
+        boolean isUserBlocked = false;
         if (existingAccount.isPresent()) {
             user = existingAccount.get().getUser();
+            isUserBlocked = oAuthAccountService.isUserBlocked(user);
         } else {
             if (email != null) {
                 user = userService.findByEmail(email).orElseGet(() -> {
@@ -79,8 +81,12 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
             oAuthAccountService.linkAccount(user, providerRegistrationId, providerUserId, email);
         }
 
-        String code = codeService.create(user);
+        if (isUserBlocked) {
+            response.sendRedirect(frontendUrl);
+        } else {
+            String code = codeService.create(user);
 
-        response.sendRedirect(frontendUrl + "/oauth2/callback?code=" + code);
+            response.sendRedirect(frontendUrl + "/oauth2/callback?code=" + code);
+        }
     }
 }

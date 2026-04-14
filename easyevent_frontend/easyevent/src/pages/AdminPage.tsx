@@ -33,6 +33,7 @@ import { useI18n } from "../i18n/i18nContext";
 import ChangeUserRequest from "../models/dto/ChangeUserRequest";
 import ListUserResponse from "../models/dto/ListUserResponse";
 import BanReasonDialog from "../components/BanReasonDialog";
+import BanRequest from "../models/dto/BanRequest";
 
 const EditableCellInput = ({
   value,
@@ -214,11 +215,41 @@ export default function AdminPage() {
     }
   };
 
-  const toggleBan = (user: ListUserResponse) => {
+  const toggleBan = async (user: ListUserResponse) => {
     if (!canEdit(user)) return;
     if (user.banned) {
       // If already banned, unban immediately
-      handleChange(user.id, "banned", false);
+      try {
+        const url = `${ENV.API_BASE_URL}/users/unban/${user.id}`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          setSnackbar({
+            open: true,
+            message: translation.admin.update_failed,
+            severity: "error",
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: translation.admin.user_updated,
+            severity: "success",
+          });
+        }
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          message: translation.admin.update_failed,
+          severity: "error",
+        });
+      }
+      // Refresh table
+      fetchUsers();
     } else {
       // If not banned, open dialog to get reason
       setUserToBan(user);
@@ -226,12 +257,42 @@ export default function AdminPage() {
     }
   };
 
-  const handleConfirmBan = (reason: string) => {
+  const handleConfirmBan = async (reason: string, userId: number) => {
     if (userToBan) {
-      handleChange(userToBan.id, "banned", true);
-      // You can now use the 'reason' variable here to send to your API
-      console.log("Banning for reason:", reason);
+      try {
+        const url = `${ENV.API_BASE_URL}/users/ban/${userId}`;
+        const banRequest = new BanRequest(reason);
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(banRequest),
+        });
+        if (!response.ok) {
+          setSnackbar({
+            open: true,
+            message: translation.admin.update_failed,
+            severity: "error",
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: translation.admin.user_updated,
+            severity: "success",
+          });
+        }
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          message: translation.admin.update_failed,
+          severity: "error",
+        });
+      }
 
+      // Refresh table
+      fetchUsers();
       setBanDialogOpen(false);
       setUserToBan(null);
     }
@@ -558,6 +619,7 @@ export default function AdminPage() {
       <BanReasonDialog
         open={banDialogOpen}
         userName={userToBan?.name}
+        userId={userToBan?.id!}
         onClose={() => setBanDialogOpen(false)}
         onConfirm={handleConfirmBan}
       />
