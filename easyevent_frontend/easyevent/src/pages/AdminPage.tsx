@@ -19,7 +19,6 @@ import {
   type GridColDef,
   type GridSortModel,
   getGridStringOperators,
-  getGridSingleSelectOperators,
 } from "@mui/x-data-grid";
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -534,7 +533,6 @@ export default function AdminPage() {
                 const targetUser = params.row;
                 const isTargetSuperAdmin =
                   targetUser.roles[0] === "ROLE_SUPER_ADMIN";
-                const isTargetAdmin = targetUser.roles[0] === "ROLE_ADMIN";
 
                 // 1. If the target is a Super Admin, nobody can change their role (not even another Super Admin, to prevent lockouts)
                 if (isTargetSuperAdmin) {
