@@ -532,8 +532,10 @@ public class UserService {
 
     private void changeRole(User target, String role) {
         Role userRole = roleRepository.findByName(role).orElseThrow(() -> new RuntimeException("Could not find role: " + role));
+        String previousRole = target.getRoles().iterator().next().getName();
         target.getRoles().clear();
         target.getRoles().add(userRole);
         userRepository.save(target);
+        mailService.sendRoleChangeMail(target, previousRole, role);
     }
 }

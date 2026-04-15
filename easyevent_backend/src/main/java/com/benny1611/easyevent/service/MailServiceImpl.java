@@ -117,6 +117,26 @@ public class MailServiceImpl implements IMailService {
         sendMail(user.getEmail(), subject, body);
     }
 
+    @Override
+    @Async
+    public void sendRoleChangeMail(User user, String previousRole, String newRole) {
+        Locale locale = resolveLocale(user);
+
+        String subject = mailMessageSource.getMessage(
+                "role.change.subject",
+                null,
+                locale
+        );
+
+        String body = mailMessageSource.getMessage(
+                "role.change.body",
+                new Object[]{user.getName(), previousRole, newRole},
+                locale
+        );
+
+        sendMail(user.getEmail(), subject, body);
+    }
+
     private void sendMail(String email, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);

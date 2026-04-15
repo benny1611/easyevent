@@ -9,4 +9,5 @@ public interface IMailService {
     void sendActivationEmail(User user);
     void sendBanMail(User user, String reason);
     void sendUnbanMail(User user);
+    void sendRoleChangeMail(User user, String previousRole, String newRole);
 }
