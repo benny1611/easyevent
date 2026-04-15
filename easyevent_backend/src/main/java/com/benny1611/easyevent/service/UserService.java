@@ -467,4 +467,73 @@ public class UserService {
             return false;
         }
     }
+
+    public boolean changeUserRoles(AuthenticatedUser principal, Long userId, ChangeRolesRequest changeRolesRequest) {
+        List<String> roles = changeRolesRequest.getRoles();
+        if (roles != null) {
+            if (!roles.isEmpty()) {
+
+                String roleString = roles.getFirst();
+                Optional<Role> roleOptional = roleRepository.findByName(roleString);
+                if (roleOptional.isPresent()) {
+                    User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
+                    User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+
+                    if (hasRole(actor, "ROLE_ADMIN") || hasRole(actor, "ROLE_SUPER_ADMIN")) {
+
+                        Role targetsRole = target.getRoles().iterator().next();
+
+                        Role role = roleOptional.get();
+                        if (targetsRole.getName().equalsIgnoreCase(role.getName())) {
+                            return true;
+                        } else if (role.getName().equalsIgnoreCase("ROLE_USER")) {
+                             if (hasRole(target, "ROLE_ADMIN")) {
+                                if (hasRole(actor, "ROLE_SUPER_ADMIN") ||
+                                        actor.getId().longValue() == target.getId().longValue()) {
+                                    changeRole(target, "ROLE_USER");
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            } else {
+                                return false;
+                            }
+                        } else if (role.getName().equalsIgnoreCase("ROLE_ADMIN")) {
+                            if (hasRole(target, "ROLE_USER") ||
+                                    actor.getId().longValue() == target.getId().longValue()) {
+                                changeRole(target, "ROLE_ADMIN");
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        } else if (role.getName().equalsIgnoreCase("ROLE_SUPER_ADMIN")) {
+                            if (hasRole(actor, "ROLE_SUPER_ADMIN")) {
+                                changeRole(target, "ROLE_SUPER_ADMIN");
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } else {
+            return true;
+        }
+    }
+
+    private void changeRole(User target, String role) {
+        Role userRole = roleRepository.findByName(role).orElseThrow(() -> new RuntimeException("Could not find role: " + role));
+        Set<Role> userRoleSet = Set.of(userRole);
+        target.setRoles(userRoleSet);
+        userRepository.save(target);
+    }
 }

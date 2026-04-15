@@ -136,6 +136,19 @@ public class UserController {
         }
     }
 
+    @PostMapping("/update/roles/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> changeUserRole(@PathVariable Long userId,
+                                               @AuthenticationPrincipal AuthenticatedUser principal,
+                                               @RequestBody ChangeRolesRequest changeRolesRequest) {
+        boolean changedUserRolesSuccessfully = userService.changeUserRoles(principal, userId, changeRolesRequest);
+        if (changedUserRolesSuccessfully) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @GetMapping("/")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UserDTO> getUser(@AuthenticationPrincipal AuthenticatedUser principal) {
