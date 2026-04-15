@@ -532,8 +532,8 @@ public class UserService {
 
     private void changeRole(User target, String role) {
         Role userRole = roleRepository.findByName(role).orElseThrow(() -> new RuntimeException("Could not find role: " + role));
-        Set<Role> userRoleSet = Set.of(userRole);
-        target.setRoles(userRoleSet);
+        target.getRoles().clear();
+        target.getRoles().add(userRole);
         userRepository.save(target);
     }
 }

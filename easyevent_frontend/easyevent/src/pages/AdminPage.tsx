@@ -34,6 +34,7 @@ import ChangeUserRequest from "../models/dto/ChangeUserRequest";
 import ListUserResponse from "../models/dto/ListUserResponse";
 import BanReasonDialog from "../components/BanReasonDialog";
 import BanRequest from "../models/dto/BanRequest";
+import ChangeRolesRequest from "../models/dto/ChangeRolesRequest";
 
 const EditableCellInput = ({
   value,
@@ -170,8 +171,9 @@ export default function AdminPage() {
   };
 
   const handleSave = async (user: ListUserResponse) => {
+    setLoading(true);
     try {
-      const endpoint = isSuperAdmin
+      const profileEndpoint = isSuperAdmin
         ? `${ENV.API_BASE_URL}/users/update/admin/${user.id}`
         : `${ENV.API_BASE_URL}/users/update/${user.id}`;
 
@@ -193,11 +195,38 @@ export default function AdminPage() {
         formData.append("profilePicture", selectedFiles[user.id]);
       }
 
-      await fetch(endpoint, {
+      const profilePromise = fetch(profileEndpoint, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
+
+      let rolePromise = Promise.resolve(null as any);
+
+      // Now allowing both Super Admins AND Admins to send role updates
+      // as long as the target is not a Super Admin (which we handled in UI anyway)
+      if (user.roles[0] !== "ROLE_SUPER_ADMIN") {
+        const roleEndpoint = `${ENV.API_BASE_URL}/users/update/roles/${user.id}`;
+        const roleRequestBody = new ChangeRolesRequest(user.roles);
+
+        rolePromise = fetch(roleEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(roleRequestBody),
+        });
+      }
+
+      const [profileRes, roleRes] = await Promise.all([
+        profilePromise,
+        rolePromise,
+      ]);
+
+      if (!profileRes.ok || (roleRes && !roleRes.ok)) {
+        throw new Error("Update failed");
+      }
 
       setSnackbar({
         open: true,
@@ -205,13 +234,22 @@ export default function AdminPage() {
         severity: "success",
       });
 
+      // Clear the selected file for this user after successful upload
+      if (selectedFiles[user.id]) {
+        const newFiles = { ...selectedFiles };
+        delete newFiles[user.id];
+        setSelectedFiles(newFiles);
+      }
+
       fetchUsers();
-    } catch {
+    } catch (error) {
       setSnackbar({
         open: true,
         message: translation.admin.update_failed,
         severity: "error",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -300,7 +338,7 @@ export default function AdminPage() {
 
   const handleRoleChange = (user: ListUserResponse, newRole: string) => {
     if (!canEdit(user)) return;
-    handleChange(user.id, "roles", newRole);
+    handleChange(user.id, "roles", [newRole]);
   };
 
   // Columns
@@ -489,36 +527,66 @@ export default function AdminPage() {
             {
               field: "role",
               type: "singleSelect" as const,
-              valueOptions: ["ROLE_USER", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"],
-              valueGetter: (_value: any, row: { roles: string[] }) => {
-                return row.roles?.[0] || "";
-              },
-              filterOperators: getGridSingleSelectOperators().filter(
-                (operator) => operator.value !== "isAnyOf",
-              ),
               headerName: translation.admin.role_control,
-              width: 160,
+              width: 180,
               sortable: false,
               renderCell: (params: any) => {
-                const user = params.row;
+                const targetUser = params.row;
+                const isTargetSuperAdmin =
+                  targetUser.roles[0] === "ROLE_SUPER_ADMIN";
+                const isTargetAdmin = targetUser.roles[0] === "ROLE_ADMIN";
 
-                if (user.roles[0] === "ROLE_SUPER_ADMIN") return null;
+                // 1. If the target is a Super Admin, nobody can change their role (not even another Super Admin, to prevent lockouts)
+                if (isTargetSuperAdmin) {
+                  return (
+                    <Chip
+                      label="SUPER ADMIN"
+                      size="small"
+                      color="secondary"
+                      variant="outlined"
+                      sx={{ mt: 1 }}
+                    />
+                  );
+                }
 
-                return (
-                  <Select
-                    size="small"
-                    value={user.roles[0]}
-                    onChange={(e) => handleRoleChange(user, e.target.value)}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      height: "100%",
-                    }}
-                  >
-                    <MenuItem value="ROLE_USER">user</MenuItem>
-                    <MenuItem value="ROLE_ADMIN">admin</MenuItem>
-                  </Select>
-                );
+                // 2. Logic for regular Admins
+                if (currentUser.role === "ROLE_ADMIN") {
+                  // Admins can only change roles of ROLE_USER (to promote them) or other ROLE_ADMINs
+                  // But they should NOT be able to see or select ROLE_SUPER_ADMIN
+                  return (
+                    <Select
+                      size="small"
+                      value={targetUser.roles[0]}
+                      onChange={(e) =>
+                        handleRoleChange(targetUser, e.target.value)
+                      }
+                      sx={{ width: "100%", mt: 0.5 }}
+                    >
+                      <MenuItem value="ROLE_USER">user</MenuItem>
+                      <MenuItem value="ROLE_ADMIN">admin</MenuItem>
+                    </Select>
+                  );
+                }
+
+                // 3. Logic for Super Admins
+                if (isSuperAdmin) {
+                  return (
+                    <Select
+                      size="small"
+                      value={targetUser.roles[0]}
+                      onChange={(e) =>
+                        handleRoleChange(targetUser, e.target.value)
+                      }
+                      sx={{ width: "100%", mt: 0.5 }}
+                    >
+                      <MenuItem value="ROLE_USER">user</MenuItem>
+                      <MenuItem value="ROLE_ADMIN">admin</MenuItem>
+                      <MenuItem value="ROLE_SUPER_ADMIN">super admin</MenuItem>
+                    </Select>
+                  );
+                }
+
+                return null;
               },
             },
           ]
