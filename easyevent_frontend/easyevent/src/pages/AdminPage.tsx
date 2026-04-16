@@ -574,13 +574,22 @@ export default function AdminPage() {
           }
 
           return (
-            <IconButton
-              disabled={!canEdit(user)}
-              onClick={() => toggleBan(user)}
-              color={user.banned ? "success" : "error"}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+              }}
             >
-              {user.banned ? <CheckCircleIcon /> : <BlockIcon />}
-            </IconButton>
+              <IconButton
+                disabled={!canEdit(user)}
+                onClick={() => toggleBan(user)}
+                color={user.banned ? "success" : "error"}
+              >
+                {user.banned ? <CheckCircleIcon /> : <BlockIcon />}
+              </IconButton>
+            </Box>
           );
         },
       },
@@ -665,7 +674,15 @@ export default function AdminPage() {
           const isTargetSuperAdmin = user.roles[0] === "ROLE_SUPER_ADMIN";
 
           return (
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1,
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+              }}
+            >
               <IconButton
                 disabled={!canEdit(user)}
                 onClick={() => handleSave(user)}
