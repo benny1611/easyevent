@@ -544,9 +544,12 @@ public class UserService {
         User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
         boolean selfDelete = actor.getId().longValue() == target.getId().longValue();
         boolean deleteBySuperAdmin = actor.getRoles().iterator().next().getName().equalsIgnoreCase("ROLE_SUPER_ADMIN");
-        if (selfDelete || deleteBySuperAdmin) {
+        boolean targetNotSuperAdmin = !target.getRoles().iterator().next().getName().equalsIgnoreCase("ROLE_SUPER_ADMIN");
+        if (selfDelete || (deleteBySuperAdmin && targetNotSuperAdmin)) {
             userRepository.delete(target);
+            return true;
+        } else {
+            return false;
         }
-        return false;
     }
 }

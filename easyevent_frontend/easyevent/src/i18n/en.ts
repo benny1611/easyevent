@@ -140,7 +140,6 @@ const en = {
         banned: "Banned",
         ban: "Ban",
         role_control: "Role Control",
-        actions: "Actions",
         user_updated: "User updated",
         update_failed: "Update failed",
         users: "Users",
@@ -149,6 +148,12 @@ const en = {
         confirm_ban: "Confirm Ban",
         cancel: "Cancel",
         ban_user: "Ban User:",
+        user_deleted: "User deleted successfully",
+        delete_failed: "Failed to delete user",
+        delete_user: "Delete User",
+        delete: "Delete",
+        delete_question: "Are you sure you want to delete",
+        delete_question_continuation: "? This action is permanent and cannot be undone.",
     }
 };
 

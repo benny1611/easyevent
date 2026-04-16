@@ -2,9 +2,10 @@ package com.benny1611.easyevent.util;
 
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,10 +24,13 @@ public class JwtUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(JwtUtils.class);
 
-    private final SecretKey key = Jwts.SIG.HS256.key().build();
+    private final SecretKey key;
     private final long expiration;
 
-    public JwtUtils (@Value("${app.security.tokenDurationInHours}") int tokenDurationInHours) {
+    public JwtUtils (@Value("${app.security.tokenDurationInHours}") int tokenDurationInHours,
+                     @Value("${app.security.jwt-secret}") String secretString) {
+        byte[] keyBytes = Decoders.BASE64.decode(secretString);
+        this.key = Keys.hmacShaKeyFor(keyBytes);
         expiration = TimeUnit.HOURS.toMillis(tokenDurationInHours);
     }
 

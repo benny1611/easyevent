@@ -13,6 +13,12 @@ import {
   TextField,
   Select,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import {
   DataGrid,
@@ -23,6 +29,7 @@ import {
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import SaveIcon from "@mui/icons-material/Save";
+import DeleteIcon from "@mui/icons-material/Delete";
 import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
@@ -340,6 +347,64 @@ export default function AdminPage() {
     handleChange(user.id, "roles", [newRole]);
   };
 
+  // State for Delete Dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<ListUserResponse | null>(
+    null,
+  );
+
+  const handleDeleteClick = (user: ListUserResponse) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${ENV.API_BASE_URL}/users/${userToDelete.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (!response.ok) throw new Error("Delete failed");
+
+      setSnackbar({
+        open: true,
+        message: translation.admin.user_deleted,
+        severity: "success",
+      });
+
+      fetchUsers(); // Refresh the list
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: translation.admin.delete_failed,
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    }
+  };
+
+  const handleSnackbarClose = (
+    _event?: React.SyntheticEvent | Event,
+    reason?: string,
+  ) => {
+    // This prevents the snackbar from closing if the user clicks outside
+    if (reason === "clickaway") {
+      return;
+    }
+
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
   // Columns
   const columns: GridColDef[] = useMemo(
     () => [
@@ -591,21 +656,36 @@ export default function AdminPage() {
         : []),
 
       {
-        field: translation.admin.actions,
+        field: "actions",
         headerName: "",
-        width: 80,
+        width: 120,
         sortable: false,
         renderCell: (params) => {
           const user = params.row;
+          const isTargetSuperAdmin = user.roles[0] === "ROLE_SUPER_ADMIN";
 
           return (
-            <IconButton
-              disabled={!canEdit(user)}
-              onClick={() => handleSave(user)}
-              color="primary"
-            >
-              <SaveIcon />
-            </IconButton>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <IconButton
+                disabled={!canEdit(user)}
+                onClick={() => handleSave(user)}
+                color="primary"
+                size="small"
+              >
+                <SaveIcon />
+              </IconButton>
+
+              {/* DELETE OPTION FOR SUPER ADMIN */}
+              {isSuperAdmin && !isTargetSuperAdmin && (
+                <IconButton
+                  onClick={() => handleDeleteClick(user)}
+                  color="error"
+                  size="small"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
+            </Box>
           );
         },
       },
@@ -689,9 +769,45 @@ export default function AdminPage() {
         onClose={() => setBanDialogOpen(false)}
         onConfirm={handleConfirmBan}
       />
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>{translation.admin.delete_user}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {translation.admin.delete_question}{" "}
+            <strong>{userToDelete?.name}</strong>
+            {translation.admin.delete_question_continuation}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>
+            {translation.admin.cancel}
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+          >
+            {translation.admin.delete}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      <Snackbar open={snackbar.open} autoHideDuration={4000}>
-        <Alert severity={snackbar.severity} variant="filled">
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000} // 5 seconds
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }} // Optional: move it out of the way
+      >
+        <Alert
+          onClose={handleSnackbarClose} // Adds a 'X' close button to the alert itself
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
