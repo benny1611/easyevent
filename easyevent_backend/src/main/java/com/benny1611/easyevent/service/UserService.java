@@ -538,4 +538,15 @@ public class UserService {
         userRepository.save(target);
         mailService.sendRoleChangeMail(target, previousRole, role);
     }
+
+    public boolean deleteUser(AuthenticatedUser principal, Long userId) {
+        User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
+        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+        boolean selfDelete = actor.getId().longValue() == target.getId().longValue();
+        boolean deleteBySuperAdmin = actor.getRoles().iterator().next().getName().equalsIgnoreCase("ROLE_SUPER_ADMIN");
+        if (selfDelete || deleteBySuperAdmin) {
+            userRepository.delete(target);
+        }
+        return false;
+    }
 }

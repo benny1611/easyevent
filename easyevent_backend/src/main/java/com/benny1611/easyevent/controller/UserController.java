@@ -167,4 +167,16 @@ public class UserController {
         Page<ListUserResponse> page = userService.getAllUsers(pageable);
         return assembler.toModel(page);
     }
+
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long userId, @AuthenticationPrincipal AuthenticatedUser principal) {
+        boolean successfullyDeleted = userService.deleteUser(principal, userId);
+        if (successfullyDeleted) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
 }
