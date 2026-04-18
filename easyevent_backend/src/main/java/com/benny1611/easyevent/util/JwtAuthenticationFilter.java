@@ -50,7 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 List<Role> allRoles = roleRepository.findAll();
                 List<GrantedAuthority> authorities = jwtUtils.getAuthorities(token, allRoles);
 
-                AuthenticatedUser principal = new AuthenticatedUser(userId, email);
+                AuthenticatedUser principal = new AuthenticatedUser(userId, email, authorities);
                 Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }

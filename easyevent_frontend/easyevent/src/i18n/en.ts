@@ -128,6 +128,13 @@ const en = {
         something_went_wrong: "Something went wrong",
         pws_don_t_match: "Passwords do not match",
         changed_succesfully: "All changes applied successfully",
+        danger_zone: "Danger Zone",
+        delete_account: "Delete Account",
+        delete_question: "Delete Account Permanently?",
+        delete_dialog_description: "This action is irreversible. All your data, profile settings, and content will be permanently removed from our servers.",
+        cancel: "Cancel",
+        deleting: "Deleting...",
+        delete_confirmation: "Yes, Delete My Account",
     },
     languages: [{name: "English", code: "en"}, {name: "German", code: "de"}, {name: "Romanian", code: "ro"}],
     admin: {

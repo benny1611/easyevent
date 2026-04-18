@@ -539,17 +539,24 @@ public class UserService {
         mailService.sendRoleChangeMail(target, previousRole, role);
     }
 
+    @Transactional
     public boolean deleteUser(AuthenticatedUser principal, Long userId) {
-        User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
-        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        boolean selfDelete = actor.getId().longValue() == target.getId().longValue();
-        boolean deleteBySuperAdmin = actor.getRoles().iterator().next().getName().equalsIgnoreCase("ROLE_SUPER_ADMIN");
-        boolean targetNotSuperAdmin = !target.getRoles().iterator().next().getName().equalsIgnoreCase("ROLE_SUPER_ADMIN");
-        if (selfDelete || (deleteBySuperAdmin && targetNotSuperAdmin)) {
-            userRepository.delete(target);
+        User target = userRepository.findByIdWithRoles(userId)
+                .orElseThrow(() -> new RuntimeException("Target user not found"));
+
+        boolean selfDelete = principal.getUserId().equals(userId);
+
+        boolean isSuperAdmin = principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_SUPER_ADMIN"));
+
+        boolean targetIsSuperAdmin = target.getRoles().stream()
+                .anyMatch(r -> r.getName().equalsIgnoreCase("ROLE_SUPER_ADMIN"));
+
+        if (selfDelete || (isSuperAdmin && !targetIsSuperAdmin)) {
+            userRepository.deleteUserById(userId);
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 }

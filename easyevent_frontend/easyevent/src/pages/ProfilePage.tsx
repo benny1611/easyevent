@@ -15,6 +15,11 @@ import {
   Stack,
   TextField,
   Typography,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   type SelectChangeEvent,
 } from "@mui/material";
 import { useI18n } from "../i18n/i18nContext";
@@ -24,16 +29,26 @@ import { useAuth } from "../auth/AuthContext";
 import { ENV } from "../config/env";
 import UserDTO from "../models/dto/UserDTO";
 import LoginResponse from "../models/dto/LoginResponse";
+import DeleteForever from "@mui/icons-material/DeleteForever";
 
 const ProfilePage = () => {
   const { translation } = useI18n();
-  const { profilePictureUrl, token, isLocalPasswordSet, userId, login } = useAuth();
+  const {
+    profilePictureUrl,
+    token,
+    isLocalPasswordSet,
+    userId,
+    login,
+    logout,
+  } = useAuth();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [language, setLanguage] = useState<string>("en");
   const [loading, setLoading] = useState(false);
   const [passwordExpanded, setPasswordExpanded] = useState(false);
+
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   const [nameError, setNameError] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
@@ -45,6 +60,33 @@ const ProfilePage = () => {
   const [oldPasswordTouched, setOldPasswordTouched] = useState(false);
   const [repeatPasswordError, setRepeatPasswordError] = useState(false);
   const [repeatPasswordTouched, setRepeatPasswordTouched] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const apiEndpoint = `${ENV.API_BASE_URL}/users/${userId}`;
+      const response = await fetch(apiEndpoint, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to delete account");
+      }
+
+      // Successful deletion - Clear local storage and state via AuthContext
+      logout();
+    } catch (err: any) {
+      setError(err.message || "An error occurred while deleting your account.");
+      setOpenDeleteDialog(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLoad = async () => {
     const apiEndpoint = `${ENV.API_BASE_URL}/users/`;
@@ -70,7 +112,7 @@ const ProfilePage = () => {
       null,
       null,
       userId!,
-      data.oauthUser
+      data.oauthUser,
     );
     if (userDTO.name) {
       setForm((prev) => ({
@@ -266,7 +308,7 @@ const ProfilePage = () => {
         newPass,
         null,
         userId!,
-        false
+        false,
       );
 
       const formData = new FormData();
@@ -505,20 +547,79 @@ const ProfilePage = () => {
         </AccordionDetails>
       </Accordion>
 
-      <Button
-        fullWidth
-        type="submit"
-        variant="contained"
-        size="large"
-        sx={{
-          textTransform: "none",
-          fontWeight: 600,
-          fontSize: 20,
-        }}
-        disabled={loading}
+      <Stack direction="column" gap={2} mt={2}>
+        <Button
+          fullWidth
+          type="submit"
+          variant="contained"
+          size="large"
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: 20,
+          }}
+          disabled={loading}
+        >
+          {translation.profile.save}
+        </Button>
+
+        {/* ADDED: Delete Account Section */}
+        <Divider sx={{ my: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            {translation.profile.danger_zone}
+          </Typography>
+        </Divider>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteForever />}
+          onClick={() => setOpenDeleteDialog(true)}
+          sx={{ textTransform: "none" }}
+        >
+          {translation.profile.delete_account}
+        </Button>
+      </Stack>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => !loading && setOpenDeleteDialog(false)}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
       >
-        {translation.profile.save}
-      </Button>
+        <DialogTitle
+          id="delete-dialog-title"
+          sx={{ fontWeight: 600, color: "error.main" }}
+        >
+          {translation.profile.delete_question}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            {translation.profile.delete_dialog_description}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setOpenDeleteDialog(false)}
+            disabled={loading}
+            variant="text"
+            sx={{ color: "text.secondary" }}
+          >
+            {translation.profile.cancel}
+          </Button>
+          <Button
+            onClick={handleDeleteAccount}
+            disabled={loading}
+            variant="contained"
+            color="error"
+            autoFocus
+          >
+            {loading ? translation.profile.deleting : translation.profile.delete_confirmation}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
