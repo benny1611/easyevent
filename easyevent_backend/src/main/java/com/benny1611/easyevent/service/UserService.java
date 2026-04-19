@@ -42,6 +42,9 @@ public class UserService {
 
     @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
+    private static final String ROLE_USER_STRING = "ROLE_USER";
+    private static final String ROLE_ADMIN_STRING = "ROLE_ADMIN";
+    private static final String ROLE_SUPER_ADMIN_STRING = "ROLE_SUPER_ADMIN";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -85,9 +88,9 @@ public class UserService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Set<String> roleNames = createUserRequest.getRoles();
         boolean isAllowedToBeCreatedByCurrentUser = false;
-        if (roleNames.contains("ROLE_ADMIN") || roleNames.contains("ADMIN")) {
+        if (roleNames.contains(ROLE_USER_STRING) || roleNames.contains("ADMIN")) {
             if (auth != null) {
-                isAllowedToBeCreatedByCurrentUser = auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                isAllowedToBeCreatedByCurrentUser = auth.getAuthorities().contains(new SimpleGrantedAuthority(ROLE_ADMIN_STRING));
             }
         } else {
             isAllowedToBeCreatedByCurrentUser = true;
@@ -132,7 +135,7 @@ public class UserService {
         user.setActive(true);
         user.setActivationToken(null);
         user.setActivationSentAt(null);
-        Role role = roleRepository.findByName("ROLE_USER").orElseThrow(() -> new RuntimeException("Could not find the user role"));
+        Role role = roleRepository.findByName(ROLE_USER_STRING).orElseThrow(() -> new RuntimeException("Could not find the user role"));
         user.setRoles(Set.of(role));
         UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find active state"));
         user.setState(activeState);
@@ -207,8 +210,7 @@ public class UserService {
 
     public ListUserResponse updateUserByAdmin(AuthenticatedUser principal, Long userId, @Valid ChangeUserRequest changeUserRequest, MultipartFile profilePicture) throws IOException {
         User target = userRepository.findByIdWithRolesAndState(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
-        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        boolean canModify = canModifyUser(actor, target);
+        boolean canModify = canModifyUser(principal, target);
         ListUserResponse result = null;
         if (canModify) {
             result = new ListUserResponse();
@@ -242,8 +244,7 @@ public class UserService {
 
     public ListUserResponse updateUserBySuperAdmin(AuthenticatedUser principal, Long userId, @Valid ChangeUserRequest changeUserRequest, MultipartFile profilePicture) throws IOException {
         User target = userRepository.findByIdWithRolesAndState(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
-        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        boolean canModify = canModifyUser(actor, target);
+        boolean canModify = canModifyUser(principal, target);
         if (canModify) {
             ListUserResponse response = new ListUserResponse();
             boolean mailChanged = false;
@@ -402,22 +403,16 @@ public class UserService {
         }
     }
 
-    private boolean canModifyUser(User actor, User target) {
-        if (hasRole(actor, "ROLE_SUPER_ADMIN")) {
+    private boolean canModifyUser(AuthenticatedUser principal, User target) {
+        if (isSuperAdmin(principal)) {
             return true;
         }
-        if (hasRole(actor, "ROLE_ADMIN") && hasRole(target, "ROLE_USER")) {
+        if (isAdmin(principal) && hasRole(target, ROLE_USER_STRING)) {
             return true;
         }
-        if (actor.getId().longValue() == target.getId().longValue()) {
-            return true;
-        }
-        return false;
+        return Objects.equals(principal.getUserId(), target.getId());
     }
 
-    private static boolean hasRole(User user, String role) {
-        return user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase(role));
-    }
 
     private boolean isUserBanned(User user) {
         UserState blockedState = userStateRepository.findByName("BLOCKED").orElseThrow(() -> new RuntimeException("Could not find active state"));
@@ -430,13 +425,13 @@ public class UserService {
 
     public boolean banUserById(AuthenticatedUser principal, Long userId, BanRequest banRequest) {
         User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
-        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        boolean canModify = canModifyUser(actor, target);
-        if (actor.getId().longValue() == target.getId().longValue()) {
+        boolean canModify = canModifyUser(principal, target);
+        if (Objects.equals(principal.getUserId(), target.getId())) {
             // A user can't ban themselves
             return false;
         }
         if (canModify) {
+            User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
             UserBanLog userBanLog = new UserBanLog();
             userBanLog.setActionType(UserBanLog.ActionType.BAN);
             userBanLog.setAdmin(actor);
@@ -452,9 +447,9 @@ public class UserService {
 
     public boolean unbanUserById(AuthenticatedUser principal, Long userId) {
         User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
-        User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        boolean canModify = canModifyUser(actor, target);
+        boolean canModify = canModifyUser(principal, target);
         if (canModify) {
+            User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
             UserBanLog userBanLog = new UserBanLog();
             userBanLog.setActionType(UserBanLog.ActionType.UNBAN);
             userBanLog.setAdmin(actor);
@@ -477,20 +472,19 @@ public class UserService {
                 Optional<Role> roleOptional = roleRepository.findByName(roleString);
                 if (roleOptional.isPresent()) {
                     User target = userRepository.findByIdWithRoles(userId).orElseThrow(() -> new RuntimeException("Target user not found"));
-                    User actor = userRepository.findByIdWithRoles(principal.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
 
-                    if (hasRole(actor, "ROLE_ADMIN") || hasRole(actor, "ROLE_SUPER_ADMIN")) {
+                    if (isAdmin(principal) || isSuperAdmin(principal)) {
 
                         Role targetsRole = target.getRoles().iterator().next();
 
                         Role role = roleOptional.get();
                         if (targetsRole.getName().equalsIgnoreCase(role.getName())) {
                             return true;
-                        } else if (role.getName().equalsIgnoreCase("ROLE_USER")) {
-                             if (hasRole(target, "ROLE_ADMIN")) {
-                                if (hasRole(actor, "ROLE_SUPER_ADMIN") ||
-                                        actor.getId().longValue() == target.getId().longValue()) {
-                                    changeRole(target, "ROLE_USER");
+                        } else if (role.getName().equalsIgnoreCase(ROLE_USER_STRING)) {
+                             if (isAdmin(target)) {
+                                if (isSuperAdmin(principal) ||
+                                        Objects.equals(principal.getUserId(), target.getId())) {
+                                    changeRole(target, ROLE_USER_STRING);
                                     return true;
                                 } else {
                                     return false;
@@ -498,17 +492,17 @@ public class UserService {
                             } else {
                                 return false;
                             }
-                        } else if (role.getName().equalsIgnoreCase("ROLE_ADMIN")) {
-                            if (hasRole(target, "ROLE_USER") ||
-                                    actor.getId().longValue() == target.getId().longValue()) {
-                                changeRole(target, "ROLE_ADMIN");
+                        } else if (role.getName().equalsIgnoreCase(ROLE_ADMIN_STRING)) {
+                            if (hasRole(target, ROLE_USER_STRING) ||
+                                    Objects.equals(principal.getUserId(), target.getId())) {
+                                changeRole(target, ROLE_ADMIN_STRING);
                                 return true;
                             } else {
                                 return false;
                             }
-                        } else if (role.getName().equalsIgnoreCase("ROLE_SUPER_ADMIN")) {
-                            if (hasRole(actor, "ROLE_SUPER_ADMIN")) {
-                                changeRole(target, "ROLE_SUPER_ADMIN");
+                        } else if (role.getName().equalsIgnoreCase(ROLE_SUPER_ADMIN_STRING)) {
+                            if (isSuperAdmin(principal)) {
+                                changeRole(target, ROLE_SUPER_ADMIN_STRING);
                                 return true;
                             } else {
                                 return false;
@@ -546,11 +540,9 @@ public class UserService {
 
         boolean selfDelete = principal.getUserId().equals(userId);
 
-        boolean isSuperAdmin = principal.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_SUPER_ADMIN"));
+        boolean isSuperAdmin = isSuperAdmin(principal);
 
-        boolean targetIsSuperAdmin = target.getRoles().stream()
-                .anyMatch(r -> r.getName().equalsIgnoreCase("ROLE_SUPER_ADMIN"));
+        boolean targetIsSuperAdmin = isSuperAdmin(target);
 
         if (selfDelete || (isSuperAdmin && !targetIsSuperAdmin)) {
             userRepository.deleteUserById(userId);
@@ -558,5 +550,27 @@ public class UserService {
         }
 
         return false;
+    }
+
+    private static boolean isAdmin(User user) {
+        return hasRole(user, ROLE_ADMIN_STRING);
+    }
+
+    private static boolean isAdmin(AuthenticatedUser principal) {
+        return principal.getAuthorities().stream()
+                .anyMatch(a -> Objects.requireNonNull(a.getAuthority()).equalsIgnoreCase(ROLE_ADMIN_STRING));
+    }
+
+    private boolean isSuperAdmin(User user) {
+        return hasRole(user, ROLE_SUPER_ADMIN_STRING);
+    }
+
+    private static boolean isSuperAdmin(AuthenticatedUser principal) {
+        return principal.getAuthorities().stream()
+                .anyMatch(a -> Objects.requireNonNull(a.getAuthority()).equalsIgnoreCase(ROLE_SUPER_ADMIN_STRING));
+    }
+
+    private static boolean hasRole(User user, String role) {
+        return user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase(role));
     }
 }
