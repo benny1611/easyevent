@@ -1,10 +1,12 @@
 package com.benny1611.easyevent.controller;
 
 import com.benny1611.easyevent.dao.RoleRepository;
+import com.benny1611.easyevent.dto.ActivationMailRequest;
 import com.benny1611.easyevent.dto.CreateUserRequest;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.service.UserService;
 import com.benny1611.easyevent.util.JwtUtils;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
@@ -16,9 +18,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Set;
+import java.util.UUID;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
@@ -114,6 +118,54 @@ public class UserControllerTest {
                         .param("password", "Password1234!!")
                         .param("name", "test")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void activationTest() throws Exception {
+        UUID token = UUID.randomUUID();
+        User user = new User();
+
+        when(userService.activateUser(token)).thenReturn(user);
+        JSONObject jo = new JSONObject();
+        jo.put("token", token);
+
+        mockMvc.perform(post("/api/users/activate").contentType(MediaType.APPLICATION_JSON)
+                        .content(jo.toString()))
+                .andExpect(status().isOk());
+
+        UUID fakeToken = UUID.randomUUID();
+        JSONObject fakeTokenJo = new JSONObject();
+        fakeTokenJo.put("token", fakeToken);
+
+        when(userService.activateUser(fakeToken)).thenReturn(null);
+        mockMvc.perform(post("/api/users/activate").contentType(MediaType.APPLICATION_JSON)
+                        .content(fakeTokenJo.toString()))
+                .andExpect(status().isNotFound());
+
+        JSONObject emptyJSON = new JSONObject();
+        mockMvc.perform(post("/api/users/activate").contentType(MediaType.APPLICATION_JSON)
+                        .content(emptyJSON.toString()))
+                .andExpect(status().isBadRequest());
+
+        String invalidJSONString = "test";
+        mockMvc.perform(post("/api/users/activate").contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidJSONString))
+                .andExpect(status().is5xxServerError());
+
+
+        JSONObject nullTokenJo = new JSONObject();
+        nullTokenJo.put("token", null);
+
+        mockMvc.perform(post("/api/users/activate").contentType(MediaType.APPLICATION_JSON)
+                        .content(nullTokenJo.toString()))
+                .andExpect(status().isBadRequest());
+
+        JSONObject blankTokenJo = new JSONObject();
+        blankTokenJo.put("token", "");
+
+        mockMvc.perform(post("/api/users/activate").contentType(MediaType.APPLICATION_JSON)
+                        .content(blankTokenJo.toString()))
                 .andExpect(status().isBadRequest());
     }
 }
