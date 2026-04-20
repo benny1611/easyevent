@@ -168,4 +168,14 @@ public class UserControllerTest {
                         .content(blankTokenJo.toString()))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    public void resendActivationTest() throws Exception {
+        mockMvc.perform(post("/api/users/resend-activation"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/users/resend-activation?email=test"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/users/resend-activation?email=test@email.com"))
+                .andExpect(status().isOk());
+    }
 }

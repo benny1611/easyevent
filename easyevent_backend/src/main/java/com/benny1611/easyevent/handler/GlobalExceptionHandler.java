@@ -11,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.util.stream.Collectors;
 
@@ -85,7 +86,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleRuntimeExceptions(RuntimeException ex, HttpServletRequest request) {
         ApiError error = new ApiError(HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                "INTERNAL_ERROR: " + ex.getMessage(),
+                ex.getMessage(),
                 request.getRequestURI());
 
         return ResponseEntity
@@ -97,7 +98,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, HttpServletRequest request) {
         ApiError error = new ApiError(HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                "BAD_REQUEST: The request body is missing or the JSON is malformed.",
+                "The request body is missing or the JSON is malformed.",
                 request.getRequestURI());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
@@ -106,7 +107,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleRoleNotFoundException(RoleNotFoundException ex, HttpServletRequest request) {
         ApiError error = new ApiError(HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                "BAD_REQUEST: The given role(s) could not be found.",
+                "The given role(s) could not be found.",
+                request.getRequestURI());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiError> handleHandlerMethodValidationException(HandlerMethodValidationException ex, HttpServletRequest request) {
+        ApiError error = new ApiError(HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "The given input is not an email address.",
                 request.getRequestURI());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
