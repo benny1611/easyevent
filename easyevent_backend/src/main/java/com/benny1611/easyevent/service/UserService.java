@@ -10,6 +10,7 @@ import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserBanLog;
 import com.benny1611.easyevent.entity.UserState;
+import com.benny1611.easyevent.exception.RoleNotFoundException;
 import com.benny1611.easyevent.util.JwtUtils;
 import com.benny1611.easyevent.util.LocaleProvider;
 import jakarta.validation.Valid;
@@ -97,15 +98,15 @@ public class UserService {
         }
         if (isAllowedToBeCreatedByCurrentUser) {
             Set<Role> roles = roleNames.stream()
-                    .map(roleName -> roleRepository.findByName(roleName).orElseThrow(() -> new RuntimeException("Role not found: " + roleName)))
+                    .map(roleName -> roleRepository.findByName(roleName).orElseThrow(() -> new RoleNotFoundException("Role not found: " + roleName)))
                     .collect(Collectors.toSet());
             user.setRoles(roles);
         } else {
             throw new AccessDeniedException("You can't perform that operation");
         }
 
-        UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find active state"));
-        user.setState(activeState);
+        UserState inactiveState = userStateRepository.findByName("INACTIVE").orElseThrow(() -> new RuntimeException("Could not find INACTIVE state"));
+        user.setState(inactiveState);
 
         user.setActive(false);
         UUID activationToken = UUID.randomUUID();
@@ -415,9 +416,9 @@ public class UserService {
 
 
     private boolean isUserBanned(User user) {
-        UserState blockedState = userStateRepository.findByName("BLOCKED").orElseThrow(() -> new RuntimeException("Could not find active state"));
-        if (user.getState().getId() != null && blockedState.getId() != null) {
-            return user.getState().getId().longValue() == blockedState.getId().longValue();
+        UserState bannedState = userStateRepository.findByName("BANNED").orElseThrow(() -> new RuntimeException("Could not find BANNED state"));
+        if (user.getState().getId() != null && bannedState.getId() != null) {
+            return user.getState().getId().equals(bannedState.getId());
         } else {
             return false;
         }

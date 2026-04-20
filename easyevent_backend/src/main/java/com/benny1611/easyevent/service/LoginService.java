@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -51,10 +52,15 @@ public class LoginService {
             return null;
         }
 
-        // Check if the user is blocked
-        UserState blockedState = userStateRepository.findByName("BLOCKED").orElseThrow(() -> new RuntimeException("Could not find the BLOCKED state"));
+        // Check if the user is banned
+        UserState bannedState = userStateRepository.findByName("BANNED").orElseThrow(() -> new RuntimeException("Could not find the BANNED state"));
         UserState userState = user.getState();
-        if (userState.getId().intValue() == blockedState.getId().intValue()) {
+        if (Objects.equals(userState.getId(), bannedState.getId())) {
+            return null;
+        }
+
+        UserState blockedState = userStateRepository.findByName("BLOCKED").orElseThrow(() -> new RuntimeException("Could not find the BANNED state"));
+        if (Objects.equals(userState.getId(), blockedState.getId())) {
             return null;
         }
 

@@ -32,13 +32,13 @@ public class UserOAuthAccountService {
         return userOAuthAccountRepository.findByProvider_NameIgnoreCaseAndProviderUserId(providerRegistrationId.toUpperCase(), providerUserId);
     }
 
-    public boolean isUserBlocked(User user) {
+    public boolean isUserBanned(User user) {
         Optional<User> userOptional = userRepository.findByIdWithRolesAndState(user.getId());
         if (userOptional.isPresent()) {
             User userWithState = userOptional.get();
             UserState state = userWithState.getState();
             if (state != null) {
-                return state.getName().equalsIgnoreCase("BLOCKED");
+                return state.getName().equalsIgnoreCase("BANNED");
             } else {
                 return false;
             }
@@ -48,7 +48,7 @@ public class UserOAuthAccountService {
     }
 
     @Transactional
-    public UserOAuthAccount linkAccount(User user, String providerRegistrationId, String providerUserId, String email) {
+    public void linkAccount(User user, String providerRegistrationId, String providerUserId, String email) {
         OauthProvider provider = oauthProviderRepository.findByNameIgnoreCase(providerRegistrationId.toUpperCase()).orElseThrow(() -> new IllegalStateException("Unknown OAuth provider"));
         UserOAuthAccount account = new UserOAuthAccount();
         account.setUser(user);
@@ -57,6 +57,6 @@ public class UserOAuthAccountService {
         account.setEmail(email);
         account.setConnectedAt(OffsetDateTime.now());
 
-        return userOAuthAccountRepository.save(account);
+        userOAuthAccountRepository.save(account);
     }
 }

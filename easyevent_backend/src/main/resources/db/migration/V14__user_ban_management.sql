@@ -15,10 +15,10 @@ CREATE TABLE user_ban_log (
 CREATE OR REPLACE FUNCTION fn_sync_user_ban_state()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Logic: If we log a BAN, set user state to 2 (BLOCKED)
+    -- Logic: If we log a BAN, set user state to 2 (BANNED)
     -- If we log an UNBAN, set user state to 1 (ACTIVE)
     IF NEW.action_type = 'BAN' THEN
-        UPDATE users SET state_id = 2 WHERE id = NEW.target_user_id;
+        UPDATE users SET state_id = 3 WHERE id = NEW.target_user_id;
     ELSIF NEW.action_type = 'UNBAN' THEN
         UPDATE users SET state_id = 1 WHERE id = NEW.target_user_id;
     END IF;

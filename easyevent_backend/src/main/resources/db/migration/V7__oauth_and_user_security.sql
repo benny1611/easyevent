@@ -7,7 +7,9 @@ CREATE TABLE user_states (
 
 INSERT INTO user_states (id, name) VALUES
     (1, 'ACTIVE'),
-    (2, 'BLOCKED');
+    (2, 'INACTIVE'),
+    (3, 'BLOCKED'),
+    (4, 'BANNED');
 
 -- OAUTH PROVIDERS
 CREATE TABLE oauth_providers (

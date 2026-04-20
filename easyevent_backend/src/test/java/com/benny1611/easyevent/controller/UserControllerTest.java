@@ -151,7 +151,7 @@ public class UserControllerTest {
         String invalidJSONString = "test";
         mockMvc.perform(post("/api/users/activate").contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJSONString))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isBadRequest());
 
 
         JSONObject nullTokenJo = new JSONObject();

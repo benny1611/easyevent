@@ -40,6 +40,7 @@ public class LoginServiceTest {
     LoginService loginService;
 
     UserState blockedState;
+    UserState bannedState;
     UserState activeState;
 
     @BeforeEach
@@ -48,13 +49,18 @@ public class LoginServiceTest {
 
         blockedState = new UserState();
         blockedState.setName("BLOCKED");
-        blockedState.setId((short) 2);
+        blockedState.setId((short) 3);
 
         activeState = new UserState();
         activeState.setName("ACTIVE");
         activeState.setId((short) 1);
 
+        bannedState = new UserState();
+        bannedState.setName("BANNED");
+        bannedState.setId((short) 4);
+
         when(userStateRepository.findByName("BLOCKED")).thenReturn(Optional.of(blockedState));
+        when(userStateRepository.findByName("BANNED")).thenReturn(Optional.of(blockedState));
     }
 
     @Test
@@ -107,5 +113,19 @@ public class LoginServiceTest {
         assertNull(token.get());
         assertEquals(3, user.getFailedLoginAttempts());
         assertEquals(blockedState.getId(), user.getState().getId());
+
+        // Banned user
+        LoginRequest bannedRequest = new LoginRequest();
+        bannedRequest.setEmail("banned@email.com");
+
+        User bannedUser = new User();
+        bannedUser.setEmail("banned@email.com");
+        bannedUser.setState(bannedState);
+        bannedUser.setFailedLoginAttempts(0);
+
+        when(userRepository.findByEmailWithRolesAndState("banned@email.com")).thenReturn(Optional.of(bannedUser));
+        assertThrows(AuthenticationException.class, () ->
+                loginService.login(bannedRequest)
+        );
     }
 }
