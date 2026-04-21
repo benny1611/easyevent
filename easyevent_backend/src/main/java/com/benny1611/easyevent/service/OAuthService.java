@@ -28,7 +28,7 @@ public class OAuthService {
     @Transactional
     public String exchange(OauthCodeRequest request) {
         Long userID = codeService.consume(request.getCode());
-        User user = userRepository.findByIdWithRoles(userID).orElseThrow(() -> new RuntimeException("Could not find user: " + userID));
+        User user = userRepository.findByIdWithRolesAndState(userID).orElseThrow(() -> new RuntimeException("Could not find user: " + userID));
         OffsetDateTime now = OffsetDateTime.now();
         user.setLastLoginAt(now);
         userRepository.save(user);

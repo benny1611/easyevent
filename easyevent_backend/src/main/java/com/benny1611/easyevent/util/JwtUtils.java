@@ -47,6 +47,7 @@ public class JwtUtils {
                 .claim("email", user.getEmail())
                 .claim("username", user.getName())
                 .claim("isLocalPasswordSet", isLocalPasswordSet)
+                .claim("state", user.getState().getName())
                 .signWith(key)
                 .compact();
     }

@@ -277,7 +277,7 @@ public class UserService {
     }
 
     public UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
-        Optional<User> userOptional = userRepository.findById(id);
+        Optional<User> userOptional = userRepository.findByIdWithRolesAndState(id);
         UserDTO result = null;
         if (userOptional.isPresent()) {
             User user = userOptional.get();
