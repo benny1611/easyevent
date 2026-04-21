@@ -4,22 +4,27 @@ import { useNavigate } from "react-router-dom";
 import { ENV } from "../config/env";
 import { useI18n } from "../i18n/i18nContext";
 import { Alert, Box, CircularProgress } from "@mui/material";
+import { useAuth } from "../auth/AuthContext";
 
 export default function ActivationPage() {
   const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
+  const activationToken = params.get("token");
   const navigate = useNavigate();
   const { translation } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { token, logout } = useAuth();
 
   useEffect(() => {
-    if (!token) {
+    if (token) {
+      logout();
+    }
+    if (!activationToken) {
       setError(translation.activation.fail);
       return;
     }
-    const activationRequest = new ActivationMailRequest(token);
+    const activationRequest = new ActivationMailRequest(activationToken);
     setLoading(true);
 
     fetch(`${ENV.API_BASE_URL}/users/activate`, {
@@ -58,7 +63,7 @@ export default function ActivationPage() {
         }
         setLoading(false);
       });
-  }, [token, navigate]);
+  }, [activationToken, navigate]);
 
   return (
     <Box>

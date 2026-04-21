@@ -89,7 +89,7 @@ public class UserService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Set<String> roleNames = createUserRequest.getRoles();
         boolean isAllowedToBeCreatedByCurrentUser = false;
-        if (roleNames.contains(ROLE_USER_STRING) || roleNames.contains("ADMIN")) {
+        if (roleNames.contains(ROLE_ADMIN_STRING) || roleNames.contains("ADMIN")) {
             if (auth != null) {
                 isAllowedToBeCreatedByCurrentUser = auth.getAuthorities().contains(new SimpleGrantedAuthority(ROLE_ADMIN_STRING));
             }
@@ -108,7 +108,6 @@ public class UserService {
         UserState inactiveState = userStateRepository.findByName("INACTIVE").orElseThrow(() -> new RuntimeException("Could not find INACTIVE state"));
         user.setState(inactiveState);
 
-        user.setActive(false);
         UUID activationToken = UUID.randomUUID();
         user.setActivationToken(activationToken);
         user.setActivationSentAt(OffsetDateTime.now());
@@ -133,7 +132,6 @@ public class UserService {
         user.setName(name);
         user.setEmail(email);
         user.setPassword(null);
-        user.setActive(true);
         user.setActivationToken(null);
         user.setActivationSentAt(null);
         Role role = roleRepository.findByName(ROLE_USER_STRING).orElseThrow(() -> new RuntimeException("Could not find the user role"));
@@ -183,9 +181,10 @@ public class UserService {
 
     public User activateUser(UUID token) {
         Optional<User> userOptional = userRepository.findByActivationToken(token);
+        UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("could not find the ACTIVE state"));
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            user.setActive(true);
+            user.setState(activeState);
             user.setActivationToken(null);
             user.setActivationSentAt(null);
             userRepository.save(user);
@@ -199,7 +198,7 @@ public class UserService {
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            if (!user.isActive()) {
+            if (!user.getState().getName().equalsIgnoreCase("ACTIVE")) {
                 UUID token = UUID.randomUUID();
                 user.setActivationToken(token);
                 user.setActivationSentAt(OffsetDateTime.now());
@@ -216,7 +215,7 @@ public class UserService {
         if (canModify) {
             result = new ListUserResponse();
             result.setId(target.getId());
-            result.setActive(target.isActive());
+            result.setActive(target.getState().getName().equalsIgnoreCase("ACTIVE"));
             result.setEmail(target.getEmail());
             result.setProfilePicture(target.getProfilePictureUrl());
             result.setBanned(isUserBanned(target));
@@ -266,7 +265,7 @@ public class UserService {
             response.setName(target.getName());
             response.setEmail(target.getEmail());
             response.setProfilePicture(target.getProfilePictureUrl());
-            response.setActive(target.isActive());
+            response.setActive(target.getState().getName().equalsIgnoreCase("ACTIVE"));
             response.setBanned(isUserBanned(target));
             List<String> roles = target.getRoles().stream().map(Role::getName).toList();
             response.setRoles(roles);
@@ -362,7 +361,7 @@ public class UserService {
                     userDTO.setName(user.getName());
                     userDTO.setEmail(user.getEmail());
                     userDTO.setProfilePicture(user.getProfilePictureUrl());
-                    userDTO.setActive(user.isActive());
+                    userDTO.setActive(user.getState().getName().equalsIgnoreCase("ACTIVE"));
                     userDTO.setBanned(isUserBanned(user));
                     List<String> roles = user.getRoles().stream().map(Role::getName).toList();
                     userDTO.setRoles(roles);
@@ -378,7 +377,8 @@ public class UserService {
                 user.setEmail(newMailAddress);
 
                 if (sendActivationMail) {
-                    user.setActive(false);
+                    UserState inactiveState = userStateRepository.findByName("INACTIVE").orElseThrow(() -> new RuntimeException("Could not find INACTIVE state"));
+                    user.setState(inactiveState);
 
                     UUID activationToken = UUID.randomUUID();
                     user.setActivationToken(activationToken);

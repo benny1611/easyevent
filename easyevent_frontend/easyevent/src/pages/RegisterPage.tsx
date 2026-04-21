@@ -158,6 +158,14 @@ const RegisterPage: React.FC = () => {
       }
 
       setSuccess(true);
+      setForm(() => ({
+        name: "",
+        email: "",
+        password: "",
+        repeatPassword: "",
+        profilePicture: undefined
+      }));
+      setAvatarPreview(null);
       setTimeout(() => {
         navigate("/");
         setSuccess(false);

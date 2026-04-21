@@ -36,9 +36,6 @@ public class User {
     @Column(name = "language", length = 5)
     private String language;
 
-    @Column(name = "active", nullable = false)
-    private boolean active;
-
     @Column(name = "activation_token")
     private UUID activationToken;
 

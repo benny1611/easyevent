@@ -6,4 +6,5 @@ export interface JwtPayload {
   profilePictureUrl: string | null;
   username: string;
   isLocalPasswordSet: boolean;
+  state: string | null;
 }

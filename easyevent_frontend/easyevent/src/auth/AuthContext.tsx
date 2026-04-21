@@ -8,6 +8,7 @@ type AuthContextType = {
   profilePictureUrl: string | null;
   username: string;
   userId: number | null;
+  userState: string | null;
   isAuthenticated: boolean;
   isLocalPasswordSet: boolean;
   hasRole: (role: string) => boolean;
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token,
       isAuthenticated: !!token,
       userId: payload?.sub ?? null,
+      userState: payload?.state!,
       roles: payload?.roles ?? [],
       profilePictureUrl: payload?.profilePictureUrl ?? null,
       username: payload?.username ?? "",

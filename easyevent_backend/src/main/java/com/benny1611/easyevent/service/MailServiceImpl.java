@@ -57,6 +57,7 @@ public class MailServiceImpl implements IMailService {
     }
 
     @Override
+    @Async
     public void sendActivationEmail(User user) {
         Locale locale = resolveLocale(user);
 

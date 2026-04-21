@@ -135,6 +135,10 @@ const en = {
         cancel: "Cancel",
         deleting: "Deleting...",
         delete_confirmation: "Yes, Delete My Account",
+        account_inactive: "Your account is not activated yet.",
+        activation_sent: "Activation email has been resent to your inbox.",
+        resend_now: "RESEND NOW",
+        sending: "SENDING...",
     },
     languages: [{name: "English", code: "en"}, {name: "German", code: "de"}, {name: "Romanian", code: "ro"}],
     admin: {

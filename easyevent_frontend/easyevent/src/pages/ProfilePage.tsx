@@ -38,6 +38,7 @@ const ProfilePage = () => {
     token,
     isLocalPasswordSet,
     userId,
+    userState,
     login,
     logout,
   } = useAuth();
@@ -357,6 +358,40 @@ const ProfilePage = () => {
     }
   };
 
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+
+  const handleResendActivation = async () => {
+    setResendLoading(true);
+    setError(null);
+    setResendSuccess(false);
+
+    try {
+      const params = new URLSearchParams({ email: form.email });
+      const apiEndpoint = `${ENV.API_BASE_URL}/users/resend-activation?${params.toString()}`;
+
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to resend activation email.");
+      }
+
+      setResendSuccess(true);
+      // Hide the success message after 5 seconds
+      setTimeout(() => setResendSuccess(false), 5000);
+    } catch (err: any) {
+      setError(err.message || "An error occurred.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   return (
     <Box
       component="form"
@@ -386,6 +421,32 @@ const ProfilePage = () => {
           {translation.profile.changed_succesfully}
         </Alert>
       )}
+
+      {userState === "INACTIVE" && (
+        <Alert
+          severity="warning"
+          variant="outlined"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={handleResendActivation}
+              disabled={resendLoading}
+            >
+              {resendLoading ? translation.profile.sending : translation.profile.resend_now}
+            </Button>
+          }
+        >
+          {translation.profile.account_inactive}
+        </Alert>
+      )}
+
+      {resendSuccess && (
+        <Alert severity="info">
+          {translation.profile.activation_sent}
+        </Alert>
+      )}
+
       <Box display="flex" justifyContent="center">
         <Stack>
           <Avatar src={handlePreview()} sx={{ width: 90, height: 90 }} />
@@ -616,7 +677,9 @@ const ProfilePage = () => {
             color="error"
             autoFocus
           >
-            {loading ? translation.profile.deleting : translation.profile.delete_confirmation}
+            {loading
+              ? translation.profile.deleting
+              : translation.profile.delete_confirmation}
           </Button>
         </DialogActions>
       </Dialog>
