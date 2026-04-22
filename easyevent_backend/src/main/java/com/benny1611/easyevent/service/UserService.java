@@ -86,17 +86,9 @@ public class UserService {
         user.setEmail(createUserRequest.getEmail());
         user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Set<String> roleNames = createUserRequest.getRoles();
-        boolean isAllowedToBeCreatedByCurrentUser = false;
-        if (roleNames.contains(ROLE_ADMIN_STRING) || roleNames.contains("ADMIN")) {
-            if (auth != null) {
-                isAllowedToBeCreatedByCurrentUser = auth.getAuthorities().contains(new SimpleGrantedAuthority(ROLE_ADMIN_STRING));
-            }
-        } else {
-            isAllowedToBeCreatedByCurrentUser = true;
-        }
-        if (isAllowedToBeCreatedByCurrentUser) {
+        boolean isCreatingUser = !roleNames.contains(ROLE_ADMIN_STRING) && !roleNames.contains(ROLE_SUPER_ADMIN_STRING);
+        if (isCreatingUser) {
             Set<Role> roles = roleNames.stream()
                     .map(roleName -> roleRepository.findByName(roleName).orElseThrow(() -> new RoleNotFoundException("Role not found: " + roleName)))
                     .collect(Collectors.toSet());
