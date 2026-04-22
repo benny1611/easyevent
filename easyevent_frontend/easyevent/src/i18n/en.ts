@@ -108,6 +108,9 @@ const en = {
         fail: "Something went wrong",
         token_not_found: "Could not find the activation",
         success: "Activation successful, you will be redirected to the login page",
+        loading: "Activating account...",
+        success_title: "Success!",
+        error_title: "Oops!",
     },
     profile: {
         title: "Edit your profile",
