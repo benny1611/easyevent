@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.Objects;
+
 @Data
 @ValidUserDTOPasswordChange
 public class UserDTO {
@@ -19,4 +21,11 @@ public class UserDTO {
     private String newPassword;
     private String token;
     private boolean isLocalPasswordSet;
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        UserDTO userDTO = (UserDTO) o;
+        return Objects.equals(id, userDTO.id);
+    }
 }

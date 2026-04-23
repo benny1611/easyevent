@@ -1,21 +1,23 @@
 package com.benny1611.easyevent.controller;
 
+import com.benny1611.easyevent.auth.OAuthSuccessHandler;
 import com.benny1611.easyevent.dao.RoleRepository;
-import com.benny1611.easyevent.dto.ActivationMailRequest;
 import com.benny1611.easyevent.dto.CreateUserRequest;
 import com.benny1611.easyevent.entity.User;
+import com.benny1611.easyevent.service.CustomUserDetailsService;
 import com.benny1611.easyevent.service.UserService;
+import com.benny1611.easyevent.util.JwtAuthenticationFilter;
 import com.benny1611.easyevent.util.JwtUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
-import org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 
 import java.util.Set;
 import java.util.UUID;
@@ -25,15 +27,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(
-        controllers = UserController.class,
-        excludeAutoConfiguration = {
-                SecurityAutoConfiguration.class,
-                SecurityFilterAutoConfiguration.class
-        }
-)
+@WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
-public class UserControllerTest {
+public class UserControllerNoSecurityTest {
 
     @Autowired
     private MockMvc mockMvc;
