@@ -122,7 +122,7 @@ export default function ActivationPage() {
                   {translation.activation.success}
                 </Typography>
                 <Typography variant="body2" color="textSecondary" sx={{ mt: 3 }}>
-                   Redirecting to login...
+                   {translation.activation.redirecting}
                 </Typography>
               </Box>
             </Zoom>
@@ -145,7 +145,7 @@ export default function ActivationPage() {
                   sx={{ mt: 4 }} 
                   onClick={() => navigate("/login")}
                 >
-                  Back to Login
+                  {translation.activation.back}
                 </Button>
               </Box>
             </Zoom>

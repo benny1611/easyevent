@@ -111,6 +111,8 @@ const en = {
         loading: "Activating account...",
         success_title: "Success!",
         error_title: "Oops!",
+        redirecting: "Redirecting to login...",
+        back: "Back to Login",
     },
     profile: {
         title: "Edit your profile",
