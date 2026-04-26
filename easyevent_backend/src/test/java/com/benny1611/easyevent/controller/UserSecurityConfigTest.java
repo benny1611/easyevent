@@ -19,6 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -71,6 +72,28 @@ public class UserSecurityConfigTest {
     @Test
     @WithMockUser(roles = "GUEST")
     public void updatingUserWithWrongRoleShouldReturn403() throws Exception {
+        performPutRequestToUpdateUsers(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void updatingUserWithWrongRoleShouldReturn400() throws Exception {
+        performPutRequestToUpdateUsers(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void updatingUserWithWrongRoleShouldReturn400_ADMIN() throws Exception {
+        performPutRequestToUpdateUsers(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void updatingUserWithWrongRoleShouldReturn400_SUPER_ADMIN() throws Exception {
+        performPutRequestToUpdateUsers(status().isBadRequest());
+    }
+
+    private void performPutRequestToUpdateUsers(ResultMatcher expectedResult) throws Exception {
         String validJsonButWrongRole = """
     {
         "id": 1
@@ -89,6 +112,6 @@ public class UserSecurityConfigTest {
                             return request;
                         })
                 )
-                .andExpect(status().isForbidden());
+                .andExpect(expectedResult);
     }
 }
