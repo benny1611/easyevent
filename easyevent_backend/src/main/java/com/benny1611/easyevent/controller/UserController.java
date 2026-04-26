@@ -73,7 +73,7 @@ public class UserController {
             @RequestPart(value = "profilePicture", required = false)
             MultipartFile profilePicture
     ) throws IOException {
-        UserDTO user = userService.updateUser(principal.getUserId(), userDTO, profilePicture);
+        UserDTO user = userService.updateUser(principal, userDTO, profilePicture);
         if (user != null) {
             return new ResponseEntity<>(user, HttpStatus.OK);
         } else {

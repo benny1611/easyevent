@@ -1,7 +1,6 @@
 package com.benny1611.easyevent.auth;
 
 import lombok.Data;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

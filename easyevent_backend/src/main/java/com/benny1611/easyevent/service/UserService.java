@@ -22,9 +22,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -267,74 +264,79 @@ public class UserService {
         }
     }
 
-    public UserDTO updateUser(Long id, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
-        Optional<User> userOptional = userRepository.findByIdWithRolesAndState(id);
+    public UserDTO updateUser(AuthenticatedUser principal, UserDTO userDTO, MultipartFile profilePicture) throws IOException {
         UserDTO result = null;
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            result = new UserDTO();
-            result.setLocalPasswordSet(user.getPassword() != null);
-            boolean used = false;
-            boolean refreshToken = false;
+        if (principal != null) {
+            Long id = principal.getUserId();
+            if (id != null) {
+                Optional<User> userOptional = userRepository.findByIdWithRolesAndState(id);
+                if (userOptional.isPresent()) {
+                    User user = userOptional.get();
+                    result = new UserDTO();
+                    result.setLocalPasswordSet(user.getPassword() != null);
+                    boolean used = false;
+                    boolean refreshToken = false;
 
-            String newMailAddress = userDTO.getEmail();
-            boolean mailChanged = changeMailAddress(newMailAddress, user, true);
-            if (mailChanged) {
-                result.setEmail(newMailAddress);
-                used = true;
-                refreshToken = true;
-            }
-
-            String newName = userDTO.getName();
-            boolean nameChanged = changeName(newName, user);
-            if (nameChanged) {
-                result.setName(newName);
-                used = true;
-                refreshToken = true;
-            }
-
-            if (profilePicture != null && !profilePicture.isEmpty()) {
-                String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
-                user.setProfilePictureUrl(profilePicUrl);
-                result.setProfilePicture(profilePicUrl);
-                used = true;
-                refreshToken = true;
-            }
-
-            if (userDTO.getLanguage() != null) {
-                String language = userDTO.getLanguage();
-                Locale requested = Locale.forLanguageTag(language);
-                if (localeProvider.supports(requested)) {
-                    user.setLanguage(language);
-                    result.setLanguage(language);
-                    used = true;
-                }
-            }
-
-            if (userDTO.getNewPassword() != null) {
-                if (user.getPassword() == null) {
-                    // OAuth-only user setting first password
-                    user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
-                    refreshToken = true;
-                    used = true;
-                } else {
-                    // Password user changing password
-                    if (!passwordEncoder.matches(userDTO.getOldPassword(), user.getPassword())) {
-                        throw new IllegalArgumentException("PASSWORD_INCORRECT");
+                    String newMailAddress = userDTO.getEmail();
+                    boolean mailChanged = changeMailAddress(newMailAddress, user, true);
+                    if (mailChanged) {
+                        result.setEmail(newMailAddress);
+                        used = true;
+                        refreshToken = true;
                     }
-                    user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
-                    used = true;
-                }
-            }
 
-            if (used) {
-                userRepository.save(user);
-                if (refreshToken) {
-                    String token = jwtUtils.generateToken(user);
-                    result.setToken(token);
+                    String newName = userDTO.getName();
+                    boolean nameChanged = changeName(newName, user);
+                    if (nameChanged) {
+                        result.setName(newName);
+                        used = true;
+                        refreshToken = true;
+                    }
+
+                    if (profilePicture != null && !profilePicture.isEmpty()) {
+                        String profilePicUrl = profileImageService.saveAsPng(profilePicture, user.getId());
+                        user.setProfilePictureUrl(profilePicUrl);
+                        result.setProfilePicture(profilePicUrl);
+                        used = true;
+                        refreshToken = true;
+                    }
+
+                    if (userDTO.getLanguage() != null) {
+                        String language = userDTO.getLanguage();
+                        Locale requested = Locale.forLanguageTag(language);
+                        if (localeProvider.supports(requested)) {
+                            user.setLanguage(language);
+                            result.setLanguage(language);
+                            used = true;
+                        }
+                    }
+
+                    if (userDTO.getNewPassword() != null) {
+                        if (user.getPassword() == null) {
+                            // OAuth-only user setting first password
+                            user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
+                            refreshToken = true;
+                            used = true;
+                        } else {
+                            // Password user changing password
+                            if (!passwordEncoder.matches(userDTO.getOldPassword(), user.getPassword())) {
+                                throw new IllegalArgumentException("PASSWORD_INCORRECT");
+                            }
+                            user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
+                            used = true;
+                        }
+                    }
+
+                    if (used) {
+                        userRepository.save(user);
+                        if (refreshToken) {
+                            String token = jwtUtils.generateToken(user);
+                            result.setToken(token);
+                        }
+                    } else {
+                        return null;
+                    }
                 }
-            } else {
-                return null;
             }
         }
         return result;

@@ -1,35 +1,47 @@
 package com.benny1611.easyevent.controller;
 
-import com.benny1611.easyevent.auth.OAuthSuccessHandler;
+import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.RoleRepository;
 import com.benny1611.easyevent.dto.CreateUserRequest;
+import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.User;
-import com.benny1611.easyevent.service.CustomUserDetailsService;
 import com.benny1611.easyevent.service.UserService;
-import com.benny1611.easyevent.util.JwtAuthenticationFilter;
 import com.benny1611.easyevent.util.JwtUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.method.support.ModelAndViewContainer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
-public class UserControllerNoSecurityTest {
+public class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -42,6 +54,28 @@ public class UserControllerNoSecurityTest {
 
     @MockitoBean
     private RoleRepository roleRepository;
+
+    @TestConfiguration
+    static class TestSecurityConfig implements WebMvcConfigurer {
+        @Override
+        public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+            resolvers.add(new HandlerMethodArgumentResolver() {
+                @Override
+                public boolean supportsParameter(MethodParameter parameter) {
+                    return parameter.getParameterType().equals(AuthenticatedUser.class);
+                }
+
+                @Override
+                public Object resolveArgument(MethodParameter parameter,
+                                              ModelAndViewContainer mavContainer,
+                                              NativeWebRequest webRequest,
+                                              WebDataBinderFactory binderFactory) {
+
+                    return webRequest.getAttribute("TEST_USER", NativeWebRequest.SCOPE_REQUEST);
+                }
+            });
+        }
+    }
 
     @Test
     void userCreateSuccessTest() throws Exception {
@@ -172,6 +206,51 @@ public class UserControllerNoSecurityTest {
         mockMvc.perform(post("/api/users/resend-activation?email=test"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(post("/api/users/resend-activation?email=test@email.com"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void updateUserTest() throws Exception {
+        String userDtoJson = """
+    {
+        "name": "test",
+        "id": 1,
+        "email": "test@test.com",
+        "language": "en",
+        "oldPassword": "test",
+        "newPassword": "test1234!"
+    }
+    """;
+
+        MockMultipartFile userPart = new MockMultipartFile(
+                "userDTO", "", "application/json", userDtoJson.getBytes()
+        );
+
+        MockMultipartFile filePart = new MockMultipartFile(
+                "profilePicture", "test.jpg", "image/jpeg", "data".getBytes()
+        );
+
+        UserDTO mockResponse = new UserDTO();
+        mockResponse.setId(42L);
+
+        when(userService.updateUser(any(), any(UserDTO.class), any()))
+                .thenReturn(mockResponse);
+        when(userService.updateUser(isNull(), any(), any())).thenReturn(null);
+
+        SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
+        AuthenticatedUser specificUser = new AuthenticatedUser(42L, "test@test.com", List.of(simpleGrantedAuthority));
+
+        mockMvc.perform(multipart("/api/users/update")
+                        .file(userPart)
+                        .file(filePart)
+                        .requestAttr("TEST_USER", specificUser)
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andDo(print())
                 .andExpect(status().isOk());
     }
 }
