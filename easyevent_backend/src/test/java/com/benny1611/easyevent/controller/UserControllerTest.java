@@ -77,6 +77,12 @@ public class UserControllerTest {
         }
     }
 
+    private final SimpleGrantedAuthority userAuthority = new SimpleGrantedAuthority("ROLE_USER");
+    private final AuthenticatedUser user = new AuthenticatedUser(42L, "test@test.com", List.of(userAuthority));
+
+    private final SimpleGrantedAuthority adminAuthority = new SimpleGrantedAuthority("ROLE_ADMIN");
+    private final AuthenticatedUser admin = new AuthenticatedUser(42L, "test@test.com", List.of(adminAuthority));
+
     @Test
     void userCreateSuccessTest() throws Exception {
         CreateUserRequest mockRequest = new CreateUserRequest();
@@ -237,14 +243,11 @@ public class UserControllerTest {
                 .thenReturn(mockResponse);
         when(userService.updateUser(isNull(), any(), any())).thenReturn(null);
 
-        SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
-        AuthenticatedUser specificUser = new AuthenticatedUser(42L, "test@test.com", List.of(simpleGrantedAuthority));
-
         // All good test
         mockMvc.perform(multipart("/api/users/update")
                         .file(userPart)
                         .file(filePart)
-                        .requestAttr("TEST_USER", specificUser)
+                        .requestAttr("TEST_USER", user)
                         .with(csrf())
                         .with(request -> {
                             request.setMethod("PUT");
@@ -257,7 +260,7 @@ public class UserControllerTest {
         // All good test - no image
         mockMvc.perform(multipart("/api/users/update")
                         .file(userPart)
-                        .requestAttr("TEST_USER", specificUser)
+                        .requestAttr("TEST_USER", user)
                         .with(csrf())
                         .with(request -> {
                             request.setMethod("PUT");
@@ -269,7 +272,7 @@ public class UserControllerTest {
 
         // Empty request
         mockMvc.perform(multipart("/api/users/update")
-                        .requestAttr("TEST_USER", specificUser)
+                        .requestAttr("TEST_USER", user)
                         .with(csrf())
                         .with(request -> {
                             request.setMethod("PUT");
@@ -311,14 +314,11 @@ public class UserControllerTest {
                 "profilePicture", "test.jpg", "image/jpeg", "data".getBytes()
         );
 
-        SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
-        AuthenticatedUser specificUser = new AuthenticatedUser(42L, "test@test.com", List.of(simpleGrantedAuthority));
-
         // All good test
         mockMvc.perform(multipart(url + "1")
                         .file(userPart)
                         .file(filePart)
-                        .requestAttr("TEST_USER", specificUser)
+                        .requestAttr("TEST_USER", user)
                         .with(csrf())
                         .with(request -> {
                             request.setMethod("PUT");
@@ -331,7 +331,7 @@ public class UserControllerTest {
         // All good test - no image
         mockMvc.perform(multipart(url + "1")
                         .file(userPart)
-                        .requestAttr("TEST_USER", specificUser)
+                        .requestAttr("TEST_USER", user)
                         .with(csrf())
                         .with(request -> {
                             request.setMethod("PUT");
@@ -345,7 +345,7 @@ public class UserControllerTest {
         mockMvc.perform(multipart(url + "2")
                         .file(userPart)
                         .file(filePart)
-                        .requestAttr("TEST_USER", specificUser)
+                        .requestAttr("TEST_USER", user)
                         .with(csrf())
                         .with(request -> {
                             request.setMethod("PUT");
@@ -357,7 +357,7 @@ public class UserControllerTest {
 
         // missing user part
         mockMvc.perform(multipart(url + "2")
-                        .requestAttr("TEST_USER", specificUser)
+                        .requestAttr("TEST_USER", user)
                         .with(csrf())
                         .with(request -> {
                             request.setMethod("PUT");
@@ -365,6 +365,58 @@ public class UserControllerTest {
                         })
                 )
                 .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    // Ban and unban user tests
+    @Test
+    public void testBanUser() throws Exception {
+
+        JSONObject banRequest = new JSONObject();
+        banRequest.put("reason", "test");
+
+        when(userService.banUserById(any(), eq(1L), any())).thenReturn(true);
+
+        // All ok test
+        mockMvc.perform(post("/api/users/ban/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(banRequest.toString())
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isOk());
+
+        // Missing content
+        mockMvc.perform(post("/api/users/ban/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isBadRequest());
+
+        // Bad input (missing reason)
+        JSONObject badInput = new JSONObject();
+        badInput.put("test", "test");
+        mockMvc.perform(post("/api/users/ban/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(badInput.toString())
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testUnbanUser() throws Exception {
+
+        JSONObject banRequest = new JSONObject();
+        banRequest.put("reason", "test");
+
+        when(userService.unbanUserById(any(), eq(1L))).thenReturn(true);
+        when(userService.unbanUserById(any(), eq(2L))).thenReturn(false);
+
+        // All ok test
+        mockMvc.perform(post("/api/users/unban/1")
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isOk());
+
+        // Not successful
+        mockMvc.perform(post("/api/users/ban/2")
+                        .requestAttr("TEST_USER", admin))
                 .andExpect(status().isBadRequest());
     }
 }

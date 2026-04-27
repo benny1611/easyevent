@@ -10,12 +10,14 @@ import com.benny1611.easyevent.util.JwtAuthenticationFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -27,8 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
@@ -223,6 +224,86 @@ public class UserSecurityConfigTest {
                             return request;
                         })
                 )
+                .andExpect(expectedResult);
+    }
+
+
+    // Test ban
+    @Test
+    public void banningUserByIdWithoutAuthShouldReturn401() throws Exception {
+        testBan(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "GUEST")
+    public void banningUserByIdGuestShouldReturn403() throws Exception {
+        testBan(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void banningUserByIdUserShouldReturn403() throws Exception {
+        testBan(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void banningUserByIdAdminShouldReturn200() throws Exception {
+        testBan(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void banningUserByIdSuperAdminShouldReturn200() throws Exception {
+        testBan(status().isOk());
+    }
+
+    private void testBan(ResultMatcher expectedResult) throws Exception {
+        when(userService.banUserById(any(), any(), any())).thenReturn(true);
+        JSONObject banRequest = new JSONObject();
+        banRequest.put("reason", "test");
+        mockMvc.perform(post("/api/users/ban/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(banRequest.toString())
+                        .with(csrf()))
+                .andExpect(expectedResult);
+    }
+
+    // Test unban
+    @Test
+    public void unbanningUserByIdWithoutAuthShouldReturn401() throws Exception {
+        testUnban(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "GUEST")
+    public void unbanningUserByIdGuestShouldReturn403() throws Exception {
+        testUnban(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void unbanningUserByIdUserShouldReturn403() throws Exception {
+        testUnban(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void unbanningUserByIdAdminShouldReturn200() throws Exception {
+        testUnban(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void unbanningUserByIdSuperAdminShouldReturn200() throws Exception {
+        testUnban(status().isOk());
+    }
+
+    private void testUnban(ResultMatcher expectedResult) throws Exception {
+        when(userService.unbanUserById(any(), any())).thenReturn(true);
+        mockMvc.perform(post("/api/users/unban/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
                 .andExpect(expectedResult);
     }
 }
