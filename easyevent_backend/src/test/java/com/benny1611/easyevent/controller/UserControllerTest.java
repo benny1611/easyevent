@@ -282,6 +282,21 @@ public class UserControllerTest {
 
     @Test
     public void updateUserByAdminTest() throws Exception {
+        ListUserResponse mockResponse = new ListUserResponse();
+        when(userService.updateUserByAdmin(any(), eq(1L), any(), any())).thenReturn(mockResponse);
+        when(userService.updateUserByAdmin(any(), eq(2L), any(), any())).thenReturn(null);
+        testUpdateUser( "/api/users/update/");
+    }
+
+    @Test
+    public void updateUserBySuperAdminTest() throws Exception {
+        ListUserResponse mockResponse = new ListUserResponse();
+        when(userService.updateUserBySuperAdmin(any(), eq(1L), any(), any())).thenReturn(mockResponse);
+        when(userService.updateUserBySuperAdmin(any(), eq(2L), any(), any())).thenReturn(null);
+        testUpdateUser("/api/users/update/admin/");
+    }
+
+    private void testUpdateUser(String url) throws Exception {
         String userDtoJson = """
     {
         "name": "test",
@@ -299,12 +314,8 @@ public class UserControllerTest {
         SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
         AuthenticatedUser specificUser = new AuthenticatedUser(42L, "test@test.com", List.of(simpleGrantedAuthority));
 
-        ListUserResponse mockResponse = new ListUserResponse();
-        when(userService.updateUserByAdmin(any(), eq(1L), any(), any())).thenReturn(mockResponse);
-        when(userService.updateUserByAdmin(any(), eq(2L), any(), any())).thenReturn(null);
-
         // All good test
-        mockMvc.perform(multipart("/api/users/update/1")
+        mockMvc.perform(multipart(url + "1")
                         .file(userPart)
                         .file(filePart)
                         .requestAttr("TEST_USER", specificUser)
@@ -318,7 +329,7 @@ public class UserControllerTest {
                 .andExpect(status().isOk());
 
         // All good test - no image
-        mockMvc.perform(multipart("/api/users/update/1")
+        mockMvc.perform(multipart(url + "1")
                         .file(userPart)
                         .requestAttr("TEST_USER", specificUser)
                         .with(csrf())
@@ -331,7 +342,7 @@ public class UserControllerTest {
                 .andExpect(status().isOk());
 
         // service returns null test
-        mockMvc.perform(multipart("/api/users/update/2")
+        mockMvc.perform(multipart(url + "2")
                         .file(userPart)
                         .file(filePart)
                         .requestAttr("TEST_USER", specificUser)
@@ -345,7 +356,7 @@ public class UserControllerTest {
                 .andExpect(status().isBadRequest());
 
         // missing user part
-        mockMvc.perform(multipart("/api/users/update/2")
+        mockMvc.perform(multipart(url + "2")
                         .requestAttr("TEST_USER", specificUser)
                         .with(csrf())
                         .with(request -> {
