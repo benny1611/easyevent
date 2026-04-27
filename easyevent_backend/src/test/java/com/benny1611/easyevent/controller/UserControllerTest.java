@@ -3,6 +3,7 @@ package com.benny1611.easyevent.controller;
 import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.RoleRepository;
 import com.benny1611.easyevent.dto.CreateUserRequest;
+import com.benny1611.easyevent.dto.ListUserResponse;
 import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.service.UserService;
@@ -30,8 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -269,6 +269,71 @@ public class UserControllerTest {
 
         // Empty request
         mockMvc.perform(multipart("/api/users/update")
+                        .requestAttr("TEST_USER", specificUser)
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void updateUserByAdminTest() throws Exception {
+        String userDtoJson = """
+    {
+        "name": "test",
+        "email": "test@test.com"
+    }
+    """;
+
+        MockMultipartFile userPart = new MockMultipartFile(
+                "changeUserRequest", "", "application/json", userDtoJson.getBytes()
+        );
+        MockMultipartFile filePart = new MockMultipartFile(
+                "profilePicture", "test.jpg", "image/jpeg", "data".getBytes()
+        );
+
+        SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
+        AuthenticatedUser specificUser = new AuthenticatedUser(42L, "test@test.com", List.of(simpleGrantedAuthority));
+
+        ListUserResponse mockResponse = new ListUserResponse();
+        when(userService.updateUserByAdmin(any(), eq(1L), any(), any())).thenReturn(mockResponse);
+        when(userService.updateUserByAdmin(any(), eq(2L), any(), any())).thenReturn(null);
+
+        // All good test
+        mockMvc.perform(multipart("/api/users/update/1")
+                        .file(userPart)
+                        .file(filePart)
+                        .requestAttr("TEST_USER", specificUser)
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // All good test - no image
+        mockMvc.perform(multipart("/api/users/update/1")
+                        .file(userPart)
+                        .requestAttr("TEST_USER", specificUser)
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // service returns null test
+        mockMvc.perform(multipart("/api/users/update/2")
+                        .file(userPart)
+                        .file(filePart)
                         .requestAttr("TEST_USER", specificUser)
                         .with(csrf())
                         .with(request -> {

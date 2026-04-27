@@ -62,6 +62,8 @@ public class UserSecurityConfigTest {
         }).when(jwtAuthenticationFilter).doFilter(any(), any(), any());
     }
 
+    // update user tests
+
     @Test
     public void updatingUserWithoutAuthShouldReturn401() throws Exception {
         mockMvc.perform(put("/api/users/update")
@@ -77,34 +79,89 @@ public class UserSecurityConfigTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    public void updatingUserWithWrongRoleShouldReturn400() throws Exception {
+    public void updatingUserWithRightRoleShouldReturn400() throws Exception {
         performPutRequestToUpdateUsers(status().isBadRequest());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void updatingUserWithWrongRoleShouldReturn400_ADMIN() throws Exception {
+    public void updatingUserWithRightRoleShouldReturn400_ADMIN() throws Exception {
         performPutRequestToUpdateUsers(status().isBadRequest());
     }
 
     @Test
     @WithMockUser(roles = "SUPER_ADMIN")
-    public void updatingUserWithWrongRoleShouldReturn400_SUPER_ADMIN() throws Exception {
+    public void updatingUserWithRightRoleShouldReturn400_SUPER_ADMIN() throws Exception {
         performPutRequestToUpdateUsers(status().isBadRequest());
     }
 
+    // update user by admin tests
+
+    @Test
+    public void updatingUserByAdminWithoutAuthShouldReturn401() throws Exception {
+        mockMvc.perform(put("/api/users/update/1")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "GUEST")
+    public void updatingUserByAdminWithWrongRoleShouldReturn403() throws Exception {
+        performPutRequestToUpdateUsersByAdmin(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void updatingUserByAdminWithWrongRoleShouldReturn403_USER() throws Exception {
+        performPutRequestToUpdateUsersByAdmin(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void updatingUserByAdminWithRightRoleShouldReturn400_ADMIN() throws Exception {
+        performPutRequestToUpdateUsersByAdmin(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void updatingUserByAdminWithRightRoleShouldReturn400_SUPER_ADMIN() throws Exception {
+        performPutRequestToUpdateUsersByAdmin(status().isBadRequest());
+    }
+
     private void performPutRequestToUpdateUsers(ResultMatcher expectedResult) throws Exception {
-        String validJsonButWrongRole = """
+        String jsonForRole = """
     {
         "id": 1
     }
     """;
 
         MockMultipartFile userPart = new MockMultipartFile(
-                "userDTO", "", "application/json", validJsonButWrongRole.getBytes()
+                "userDTO", "", "application/json", jsonForRole.getBytes()
         );
 
         mockMvc.perform(multipart("/api/users/update")
+                        .file(userPart) // adding dummy user so that the request will go through
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andExpect(expectedResult);
+    }
+
+    private void performPutRequestToUpdateUsersByAdmin(ResultMatcher expectedResult) throws Exception {
+        String validJsonButWrongRole = """
+    {
+        "email": "test@test.com"
+    }
+    """;
+
+        MockMultipartFile userPart = new MockMultipartFile(
+                "changeUserRequest", "", "application/json", validJsonButWrongRole.getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/users/update/1")
                         .file(userPart) // adding dummy user so that the request will go through
                         .with(csrf())
                         .with(request -> {

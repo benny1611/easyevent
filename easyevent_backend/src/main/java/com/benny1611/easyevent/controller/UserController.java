@@ -85,10 +85,10 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ListUserResponse> updateUserByAdmin(@PathVariable Long userId,
                                               @AuthenticationPrincipal AuthenticatedUser principal,
-                                              @RequestPart("changeUserRequest") @Valid ChangeUserRequest userDTO,
+                                              @RequestPart("changeUserRequest") @Valid ChangeUserRequest changeUserRequest,
                                               @RequestPart(value = "profilePicture", required = false)
                                               MultipartFile profilePicture) throws IOException {
-        ListUserResponse user = userService.updateUserByAdmin(principal, userId, userDTO, profilePicture);
+        ListUserResponse user = userService.updateUserByAdmin(principal, userId, changeUserRequest, profilePicture);
         if (user != null) {
             return new ResponseEntity<>(user, HttpStatus.OK);
         } else {
