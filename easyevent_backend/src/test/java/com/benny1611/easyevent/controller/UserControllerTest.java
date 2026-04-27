@@ -343,5 +343,17 @@ public class UserControllerTest {
                 )
                 .andDo(print())
                 .andExpect(status().isBadRequest());
+
+        // missing user part
+        mockMvc.perform(multipart("/api/users/update/2")
+                        .requestAttr("TEST_USER", specificUser)
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
     }
 }
