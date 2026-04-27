@@ -105,7 +105,7 @@ public class UserSecurityConfigTest {
         );
 
         mockMvc.perform(multipart("/api/users/update")
-                        .file(userPart)
+                        .file(userPart) // adding dummy user so that the request will go through
                         .with(csrf())
                         .with(request -> {
                             request.setMethod("PUT");

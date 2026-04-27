@@ -240,6 +240,7 @@ public class UserControllerTest {
         SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
         AuthenticatedUser specificUser = new AuthenticatedUser(42L, "test@test.com", List.of(simpleGrantedAuthority));
 
+        // All good test
         mockMvc.perform(multipart("/api/users/update")
                         .file(userPart)
                         .file(filePart)
@@ -252,5 +253,30 @@ public class UserControllerTest {
                 )
                 .andDo(print())
                 .andExpect(status().isOk());
+
+        // All good test - no image
+        mockMvc.perform(multipart("/api/users/update")
+                        .file(userPart)
+                        .requestAttr("TEST_USER", specificUser)
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // Empty request
+        mockMvc.perform(multipart("/api/users/update")
+                        .requestAttr("TEST_USER", specificUser)
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
     }
 }
