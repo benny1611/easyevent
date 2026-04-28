@@ -232,9 +232,23 @@ public class UserControllerTest {
         "newPassword": "test1234!"
     }
     """;
+        String userDtoJson2 = """
+    {
+        "name": "test",
+        "id": 2,
+        "email": "test@test.com",
+        "language": "en",
+        "oldPassword": "test",
+        "newPassword": "test1234!"
+    }
+    """;
 
         MockMultipartFile userPart = new MockMultipartFile(
                 "userDTO", "", "application/json", userDtoJson.getBytes()
+        );
+
+        MockMultipartFile userPart2 = new MockMultipartFile(
+                "userDTO", "", "application/json", userDtoJson2.getBytes()
         );
 
         MockMultipartFile filePart = new MockMultipartFile(
@@ -244,8 +258,10 @@ public class UserControllerTest {
         UserDTO mockResponse = new UserDTO();
         mockResponse.setId(42L);
 
-        when(userService.updateUser(any(), any(UserDTO.class), any()))
+        when(userService.updateUser(any(), argThat(usr -> usr != null && usr.getId().equals(1L)), any()))
                 .thenReturn(mockResponse);
+        when(userService.updateUser(any(), argThat(usr -> usr != null && usr.getId().equals(2L)), any()))
+                .thenReturn(null);
         when(userService.updateUser(isNull(), any(), any())).thenReturn(null);
 
         // All good test
@@ -277,6 +293,18 @@ public class UserControllerTest {
 
         // Empty request
         mockMvc.perform(multipart("/api/users/update")
+                        .requestAttr("TEST_USER", user)
+                        .with(csrf())
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(multipart("/api/users/update")
+                        .file(userPart2)
                         .requestAttr("TEST_USER", user)
                         .with(csrf())
                         .with(request -> {
@@ -381,6 +409,7 @@ public class UserControllerTest {
         banRequest.put("reason", "test");
 
         when(userService.banUserById(any(), eq(1L), any())).thenReturn(true);
+        when(userService.banUserById(any(), eq(2L), any())).thenReturn(false);
 
         // All ok test
         mockMvc.perform(post("/api/users/ban/1")
@@ -403,14 +432,17 @@ public class UserControllerTest {
                         .content(badInput.toString())
                         .requestAttr("TEST_USER", admin))
                 .andExpect(status().isBadRequest());
+
+        // service returns false
+        mockMvc.perform(post("/api/users/ban/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(banRequest.toString())
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testUnbanUser() throws Exception {
-
-        JSONObject banRequest = new JSONObject();
-        banRequest.put("reason", "test");
-
         when(userService.unbanUserById(any(), eq(1L))).thenReturn(true);
         when(userService.unbanUserById(any(), eq(2L))).thenReturn(false);
 
@@ -420,7 +452,7 @@ public class UserControllerTest {
                 .andExpect(status().isOk());
 
         // Not successful
-        mockMvc.perform(post("/api/users/ban/2")
+        mockMvc.perform(post("/api/users/unban/2")
                         .requestAttr("TEST_USER", admin))
                 .andExpect(status().isBadRequest());
     }
