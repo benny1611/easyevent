@@ -171,13 +171,21 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> deleteUser(@PathVariable @NotNull Long userId, @AuthenticationPrincipal AuthenticatedUser principal) {
-        boolean successfullyDeleted = userService.deleteUser(principal, userId);
+    public ResponseEntity<Void> deleteUser(@PathVariable @NotNull Long userId,
+                                           @AuthenticationPrincipal AuthenticatedUser principal,
+                                           @RequestBody DeletionReason deletionReason) {
+        boolean successfullyDeleted = userService.deleteUser(principal, userId, deletionReason);
         if (successfullyDeleted) {
             return new ResponseEntity<>(HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @PostMapping("/recover")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> recoverUser() {
+        return new ResponseEntity<>(HttpStatus.OK); // TODO: implement
     }
 
 }

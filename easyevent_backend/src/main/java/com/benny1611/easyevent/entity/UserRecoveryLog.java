@@ -1,0 +1,25 @@
+package com.benny1611.easyevent.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import jakarta.persistence.Id;
+
+import java.time.OffsetDateTime;
+
+@Entity
+@Table(name = "user_recovery_log")
+@Data
+public class UserRecoveryLog {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "target_user_id", nullable = false)
+    private Long targetUserId;
+
+    @Column(name = "recovered_by_id", nullable = false)
+    private Long recoveredById;
+
+    @Column(name = "occurred_at", nullable = false)
+    private OffsetDateTime occurredAt;
+}

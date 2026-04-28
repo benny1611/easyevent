@@ -2,12 +2,18 @@ package com.benny1611.easyevent.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.OffsetDateTime;
 import java.util.*;
 
 @Entity
 @Table(name = "users")
+@FilterDef(name = "deletedUserFilter", parameters = @ParamDef(name = "isDeleted", type = Boolean.class))
+@Filter(name = "deletedUserFilter", condition = "deleted_at IS NULL")
 @Data
 public class User {
 
@@ -42,6 +48,9 @@ public class User {
     @Column(name = "activation_sent_at")
     private OffsetDateTime activationSentAt;
 
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "state_id")
     private UserState state;
@@ -57,6 +66,10 @@ public class User {
 
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Event> events = new ArrayList<>();
+
+    public boolean isSoftDeleted() {
+        return deletedAt != null;
+    }
 
     public User() {}
 }

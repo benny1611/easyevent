@@ -1,4 +1,4 @@
-package com.benny1611.easyevent.service;
+package com.benny1611.easyevent.cron;
 
 import com.benny1611.easyevent.dao.PasswordResetTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;

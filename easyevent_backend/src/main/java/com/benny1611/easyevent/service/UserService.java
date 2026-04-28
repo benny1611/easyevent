@@ -1,20 +1,18 @@
 package com.benny1611.easyevent.service;
 
 import com.benny1611.easyevent.auth.AuthenticatedUser;
-import com.benny1611.easyevent.dao.RoleRepository;
-import com.benny1611.easyevent.dao.UserBanLogRepository;
-import com.benny1611.easyevent.dao.UserRepository;
-import com.benny1611.easyevent.dao.UserStateRepository;
+import com.benny1611.easyevent.dao.*;
 import com.benny1611.easyevent.dto.*;
-import com.benny1611.easyevent.entity.Role;
-import com.benny1611.easyevent.entity.User;
-import com.benny1611.easyevent.entity.UserBanLog;
-import com.benny1611.easyevent.entity.UserState;
+import com.benny1611.easyevent.entity.*;
 import com.benny1611.easyevent.exception.RoleNotFoundException;
 import com.benny1611.easyevent.util.JwtUtils;
 import com.benny1611.easyevent.util.LocaleProvider;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PersistenceContext;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,9 +48,14 @@ public class UserService {
     private final ProfileImageService profileImageService;
     private final UserStateRepository userStateRepository;
     private final UserBanLogRepository userBanLogRepository;
+    private final DeletionLogRepository logRepository;
+    private final UserRecoveryLogRepository recoveryLogRepository;
     private final IMailService mailService;
     private final LocaleProvider localeProvider;
     private final JwtUtils jwtUtils;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
 
     @Autowired
@@ -61,7 +64,7 @@ public class UserService {
                        ProfileImageService profileImageService,
                        @Qualifier("bcryptPasswordEncoder") PasswordEncoder passwordEncoder,
                        UserStateRepository userStateRepository,
-                       UserBanLogRepository userBanLogRepository,
+                       UserBanLogRepository userBanLogRepository, DeletionLogRepository logRepository, UserRecoveryLogRepository recoveryLogRepository,
                        IMailService mailService,
                        LocaleProvider localeProvider, JwtUtils jwtUtils) {
         this.userRepository = userRepository;
@@ -70,6 +73,8 @@ public class UserService {
         this.profileImageService = profileImageService;
         this.userStateRepository = userStateRepository;
         this.userBanLogRepository = userBanLogRepository;
+        this.logRepository = logRepository;
+        this.recoveryLogRepository = recoveryLogRepository;
         this.mailService = mailService;
         this.localeProvider = localeProvider;
         this.jwtUtils = jwtUtils;
@@ -346,7 +351,13 @@ public class UserService {
         return result;
     }
 
+    @Transactional
     public Page<ListUserResponse> getAllUsers(Pageable pageable) {
+        Session session = entityManager.unwrap(Session.class);
+
+        // DISABLE the filter so we can see deleted users
+        session.disableFilter("deletedUserFilter");
+
         Page<Long> page = userRepository.findUserIds(pageable);
         List<User> users = userRepository.findAllByIdWithRolesAndState(page.getContent());
 
@@ -533,7 +544,7 @@ public class UserService {
     }
 
     @Transactional
-    public boolean deleteUser(AuthenticatedUser principal, Long userId) {
+    public boolean deleteUser(AuthenticatedUser principal, Long userId, DeletionReason deletionReason) {
         User target = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new RuntimeException("Target user not found"));
 
@@ -543,12 +554,56 @@ public class UserService {
 
         boolean targetIsSuperAdmin = isSuperAdmin(target);
 
-        if (selfDelete || (isSuperAdmin && !targetIsSuperAdmin)) {
-            userRepository.deleteUserById(userId);
-            return true;
-        }
+        String reason = deletionReason.getReason();
 
-        return false;
+        if (selfDelete) {
+            softDeleteUser(target.getId(), principal.getUserId(), false, null);
+            return true;
+        } else if (isSuperAdmin && !targetIsSuperAdmin) {
+            if (reason != null && !reason.isBlank()) {
+                softDeleteUser(target.getId(), principal.getUserId(), true, reason);
+                return true;
+            }  else {
+                throw new IllegalArgumentException("Reason cannot be null or empty");
+            }
+        } else {
+            return false;
+        }
+    }
+
+    private void softDeleteUser(Long targetId, Long actorId, boolean isAdmin, String reason) {
+        User user = userRepository.findById(targetId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        // 1. Mark as deleted
+        user.setDeletedAt(OffsetDateTime.now());
+        userRepository.save(user);
+
+        // 2. Audit the action
+        UserDeletionLog log = new UserDeletionLog();
+        log.setTargetUserId(targetId);
+        log.setActorId(actorId);
+        log.setDeletionType(isAdmin ? "ADMIN" : "SELF");
+        log.setReason(reason);
+        logRepository.save(log);
+    }
+
+    @Transactional
+    public void recoverAccount(String email) {
+        User user = userRepository.findSoftDeletedByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Account not found or already purged"));
+
+        // Restore the account
+        user.setDeletedAt(null);
+        userRepository.save(user);
+
+        // Log the recovery
+        UserRecoveryLog log = new UserRecoveryLog();
+        log.setTargetUserId(user.getId());
+        log.setRecoveredById(user.getId());
+        log.setOccurredAt(OffsetDateTime.now());
+
+        recoveryLogRepository.save(log);
     }
 
     private static boolean isAdmin(User user) {

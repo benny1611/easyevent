@@ -2,6 +2,7 @@ package com.benny1611.easyevent.dto;
 
 import lombok.Data;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Data
@@ -13,4 +14,6 @@ public class ListUserResponse {
     private boolean active;
     private boolean isBanned;
     private List<String> roles;
+    private boolean softDeleted;
+    private OffsetDateTime deletedAt;
 }

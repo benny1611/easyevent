@@ -1,15 +1,14 @@
 package com.benny1611.easyevent.dao;
 
 import com.benny1611.easyevent.entity.User;
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,8 +65,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByActivationToken(@Param("token") UUID token);
 
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM User u WHERE u.id = :userId")
-    void deleteUserById(@Param("userId") Long userId);
+    // Recovery: Native query to find "hidden" rows
+    @Query(value = "SELECT * FROM users WHERE email = :email AND deleted_at IS NOT NULL", nativeQuery = true)
+    Optional<User> findSoftDeletedByEmail(@Param("email") String email);
+
+    // For the cleanup task
+    @Query(value = "SELECT * FROM users WHERE deleted_at <= :threshold", nativeQuery = true)
+    List<User> findExpiredSoftDeletedUsers(@Param("threshold") OffsetDateTime threshold);
 }

@@ -466,9 +466,11 @@ public class UserSecurityConfigTest {
     }
 
     private void deleteUserTest(ResultMatcher expectedResult) throws Exception {
-        when(userService.deleteUser(any(), any())).thenReturn(true);
+        when(userService.deleteUser(any(), any(), any())).thenReturn(true);
 
-        mockMvc.perform(delete("/api/users/1"))
+        mockMvc.perform(delete("/api/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
                 .andExpect(expectedResult);
     }
 }
