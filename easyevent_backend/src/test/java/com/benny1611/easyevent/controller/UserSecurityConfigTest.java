@@ -434,4 +434,41 @@ public class UserSecurityConfigTest {
 
         mockMvc.perform(get("/api/users/all")).andExpect(expectedResult);
     }
+
+    // Test delete user
+    @Test
+    public void deleteUserWithoutAuthShouldReturn401() throws Exception {
+        deleteUserTest(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "GUEST")
+    public void deleteUserGuestShouldReturn403() throws Exception {
+        deleteUserTest(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void deleteUserUserShouldReturn200() throws Exception {
+        deleteUserTest(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void deleteUserAdminShouldReturn200() throws Exception {
+        deleteUserTest(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void deleteUserSuperAdminShouldReturn200() throws Exception {
+        deleteUserTest(status().isOk());
+    }
+
+    private void deleteUserTest(ResultMatcher expectedResult) throws Exception {
+        when(userService.deleteUser(any(), any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/users/1"))
+                .andExpect(expectedResult);
+    }
 }

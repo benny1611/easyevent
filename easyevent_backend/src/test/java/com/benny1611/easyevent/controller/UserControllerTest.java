@@ -448,6 +448,11 @@ public class UserControllerTest {
                         .requestAttr("TEST_USER", admin))
                 .andExpect(status().isBadRequest());
 
+        // No id
+        mockMvc.perform(post("/api/users/update/roles/")
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().is4xxClientError());
+
         // Service returns false
         mockMvc.perform(post("/api/users/update/roles/2")
                         .requestAttr("TEST_USER", admin)
@@ -494,5 +499,27 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$._embedded.listUserResponseList[0].name").value("test"))
                 .andExpect(jsonPath("$.page.size").value(20))
                 .andExpect(jsonPath("$.page.totalElements").value(1));
+    }
+
+    @Test
+    public void deleteUserTest() throws Exception {
+
+        when(userService.deleteUser(any(), eq(1L))).thenReturn(true);
+        when(userService.deleteUser(any(), eq(2L))).thenReturn(false);
+
+        // all ok test
+        mockMvc.perform(delete("/api/users/1")
+                        .requestAttr("TEST_USER", user))
+                .andExpect(status().isOk());
+
+        // service returns false
+        mockMvc.perform(delete("/api/users/2")
+                        .requestAttr("TEST_USER", user))
+                .andExpect(status().isBadRequest());
+
+        // no id
+        mockMvc.perform(delete("/api/users/")
+                        .requestAttr("TEST_USER", user))
+                .andExpect(status().is4xxClientError());
     }
 }
