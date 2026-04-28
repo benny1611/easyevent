@@ -149,20 +149,24 @@ public class UserService {
         return user;
     }
 
-    public UserDTO findById(Long id) {
-        Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            UserDTO userDTO = new UserDTO();
-            userDTO.setEmail(user.getEmail());
-            userDTO.setName(user.getName());
-            userDTO.setLanguage(user.getLanguage());
-            userDTO.setProfilePicture(user.getProfilePictureUrl());
-            userDTO.setLocalPasswordSet(user.getPassword() == null);
-            return userDTO;
-        } else {
-            return null;
+    public UserDTO findById(AuthenticatedUser principal) {
+        UserDTO result = null;
+        if (principal != null) {
+            Long id = principal.getUserId();
+            if (id != null) {
+                Optional<User> userOptional = userRepository.findById(id);
+                if (userOptional.isPresent()) {
+                    User user = userOptional.get();
+                    result = new UserDTO();
+                    result.setEmail(user.getEmail());
+                    result.setName(user.getName());
+                    result.setLanguage(user.getLanguage());
+                    result.setProfilePicture(user.getProfilePictureUrl());
+                    result.setLocalPasswordSet(user.getPassword() == null);
+                }
+            }
         }
+        return result;
     }
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);

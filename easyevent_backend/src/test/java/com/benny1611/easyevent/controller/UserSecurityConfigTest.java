@@ -10,6 +10,7 @@ import com.benny1611.easyevent.util.JwtAuthenticationFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -304,6 +305,87 @@ public class UserSecurityConfigTest {
         mockMvc.perform(post("/api/users/unban/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
+                .andExpect(expectedResult);
+    }
+
+    // Test change user role
+    @Test
+    public void changeRoleWithoutAuthShouldReturn401() throws Exception {
+        testChangeUserRole(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "GUEST")
+    public void changeRoleGuestShouldReturn403() throws Exception {
+        testChangeUserRole(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void changeRoleUserShouldReturn403() throws Exception {
+        testChangeUserRole(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void changeRoleAdminShouldReturn200() throws Exception {
+        testChangeUserRole(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void changeRoleSuperAdminShouldReturn200() throws Exception {
+        testChangeUserRole(status().isOk());
+    }
+
+    private void testChangeUserRole(ResultMatcher expectedResult) throws Exception {
+        JSONObject changeRolesRequest = new JSONObject();
+        JSONArray roles = new JSONArray();
+        roles.put("ROLE_USER");
+        changeRolesRequest.put("roles", roles);
+
+        when(userService.changeUserRoles(any(), any(), any())).thenReturn(true);
+        mockMvc.perform(post("/api/users/update/roles/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(changeRolesRequest.toString()))
+                .andExpect(expectedResult);
+    }
+
+    // Test get user
+    @Test
+    public void getUserWithoutAuthShouldReturn401() throws Exception {
+        testGetUser(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "GUEST")
+    public void getUserGuestShouldReturn403() throws Exception {
+        testGetUser(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void getUserUserShouldReturn200() throws Exception {
+        testGetUser(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void getUserAdminShouldReturn200() throws Exception {
+        testGetUser(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void getUserSuperAdminShouldReturn200() throws Exception {
+        testGetUser(status().isOk());
+    }
+
+    private void testGetUser(ResultMatcher expectedResult) throws Exception {
+        UserDTO mockResult = new UserDTO();
+        when(userService.findById(any())).thenReturn(mockResult);
+
+        mockMvc.perform(get("/api/users/"))
                 .andExpect(expectedResult);
     }
 }

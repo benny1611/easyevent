@@ -35,8 +35,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -82,7 +81,7 @@ public class UserControllerTest {
     private final AuthenticatedUser user = new AuthenticatedUser(42L, "test@test.com", List.of(userAuthority));
 
     private final SimpleGrantedAuthority adminAuthority = new SimpleGrantedAuthority("ROLE_ADMIN");
-    private final AuthenticatedUser admin = new AuthenticatedUser(42L, "test@test.com", List.of(adminAuthority));
+    private final AuthenticatedUser admin = new AuthenticatedUser(43L, "test@test.com", List.of(adminAuthority));
 
     @Test
     void userCreateSuccessTest() throws Exception {
@@ -449,6 +448,24 @@ public class UserControllerTest {
                         .requestAttr("TEST_USER", admin)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(changeRolesRequest.toString()))
+                .andExpect(status().isBadRequest());
+
+    }
+
+    @Test
+    public void testGetUser() throws Exception {
+        UserDTO mockResult = new UserDTO();
+        when(userService.findById(argThat(usr -> usr != null && usr.getUserId().equals(42L)))).thenReturn(mockResult);
+        when(userService.findById(argThat(usr -> usr != null && usr.getUserId().equals(43L)))).thenReturn(null);
+
+        // All ok test
+        mockMvc.perform(get("/api/users/")
+                        .requestAttr("TEST_USER", user))
+                .andExpect(status().isOk());
+
+        // Service returns false
+        mockMvc.perform(get("/api/users/")
+                        .requestAttr("TEST_USER", admin))
                 .andExpect(status().isBadRequest());
 
     }

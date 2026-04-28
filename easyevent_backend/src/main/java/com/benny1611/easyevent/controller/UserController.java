@@ -152,7 +152,7 @@ public class UserController {
     @GetMapping("/")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UserDTO> getUser(@AuthenticationPrincipal AuthenticatedUser principal) {
-        UserDTO userDTO = userService.findById(principal.getUserId());
+        UserDTO userDTO = userService.findById(principal);
         if (userDTO != null) {
             return new ResponseEntity<>(userDTO, HttpStatus.OK);
         } else {
