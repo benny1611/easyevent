@@ -140,7 +140,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> changeUserRole(@PathVariable Long userId,
                                                @AuthenticationPrincipal AuthenticatedUser principal,
-                                               @RequestBody ChangeRolesRequest changeRolesRequest) {
+                                               @RequestBody @Valid ChangeRolesRequest changeRolesRequest) {
         boolean changedUserRolesSuccessfully = userService.changeUserRoles(principal, userId, changeRolesRequest);
         if (changedUserRolesSuccessfully) {
             return new ResponseEntity<>(HttpStatus.OK);

@@ -8,6 +8,7 @@ import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.service.UserService;
 import com.benny1611.easyevent.util.JwtUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -418,5 +419,37 @@ public class UserControllerTest {
         mockMvc.perform(post("/api/users/ban/2")
                         .requestAttr("TEST_USER", admin))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testChangeUserRole() throws Exception {
+
+        JSONObject changeRolesRequest = new JSONObject();
+        JSONArray roles = new JSONArray();
+        roles.put("ROLE_USER");
+        changeRolesRequest.put("roles", roles);
+
+        when(userService.changeUserRoles(any(), eq(1L), any())).thenReturn(true);
+        when(userService.changeUserRoles(any(), eq(2L), any())).thenReturn(false);
+
+        // All ok test
+        mockMvc.perform(post("/api/users/update/roles/1")
+                        .requestAttr("TEST_USER", admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(changeRolesRequest.toString()))
+                .andExpect(status().isOk());
+
+        // No content
+        mockMvc.perform(post("/api/users/update/roles/1")
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isBadRequest());
+
+        // Service returns false
+        mockMvc.perform(post("/api/users/update/roles/2")
+                        .requestAttr("TEST_USER", admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(changeRolesRequest.toString()))
+                .andExpect(status().isBadRequest());
+
     }
 }
