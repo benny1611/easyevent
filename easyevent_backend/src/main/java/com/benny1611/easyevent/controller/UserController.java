@@ -6,6 +6,7 @@ import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -170,7 +171,7 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long userId, @AuthenticationPrincipal AuthenticatedUser principal) {
+    public ResponseEntity<Void> deleteUser(@PathVariable @NotNull Long userId, @AuthenticationPrincipal AuthenticatedUser principal) {
         boolean successfullyDeleted = userService.deleteUser(principal, userId);
         if (successfullyDeleted) {
             return new ResponseEntity<>(HttpStatus.OK);

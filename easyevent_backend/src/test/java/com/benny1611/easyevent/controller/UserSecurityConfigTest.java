@@ -18,6 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,6 +29,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -387,5 +393,45 @@ public class UserSecurityConfigTest {
 
         mockMvc.perform(get("/api/users/"))
                 .andExpect(expectedResult);
+    }
+
+    // Test get all users
+    @Test
+    public void getAllUsersWithoutAuthShouldReturn401() throws Exception {
+        testGetAllUsers(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "GUEST")
+    public void getAllUsersGuestShouldReturn403() throws Exception {
+        testGetAllUsers(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void getAllUsersUserShouldReturn403() throws Exception {
+        testGetAllUsers(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void getAllUsersAdminShouldReturn200() throws Exception {
+        testGetAllUsers(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void getAllUsersSuperAdminShouldReturn200() throws Exception {
+        testGetAllUsers(status().isOk());
+    }
+
+    private void testGetAllUsers(ResultMatcher expectedResult) throws Exception {
+        ListUserResponse userResponse = new ListUserResponse();
+        PageRequest pageRequest = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "name"));
+        PageImpl<ListUserResponse> page = new PageImpl<>(List.of(userResponse), pageRequest, 1);
+
+        when(userService.getAllUsers(any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/users/all")).andExpect(expectedResult);
     }
 }

@@ -16,6 +16,10 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.core.MethodParameter;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -37,6 +41,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = UserController.class)
@@ -455,18 +460,39 @@ public class UserControllerTest {
     @Test
     public void testGetUser() throws Exception {
         UserDTO mockResult = new UserDTO();
+        mockResult.setId(1L);
         when(userService.findById(argThat(usr -> usr != null && usr.getUserId().equals(42L)))).thenReturn(mockResult);
         when(userService.findById(argThat(usr -> usr != null && usr.getUserId().equals(43L)))).thenReturn(null);
 
         // All ok test
         mockMvc.perform(get("/api/users/")
                         .requestAttr("TEST_USER", user))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
 
         // Service returns false
         mockMvc.perform(get("/api/users/")
                         .requestAttr("TEST_USER", admin))
                 .andExpect(status().isBadRequest());
 
+    }
+
+    @Test
+    public void testGetAllUsers() throws Exception {
+        ListUserResponse userResponse = new ListUserResponse();
+        userResponse.setId(1L);
+        userResponse.setName("test");
+        PageRequest pageRequest = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "name"));
+        PageImpl<ListUserResponse> page = new PageImpl<>(List.of(userResponse), pageRequest, 1);
+
+        when(userService.getAllUsers(any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/users/all")
+                        .requestAttr("TEST_USER", admin)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.listUserResponseList[0].name").value("test"))
+                .andExpect(jsonPath("$.page.size").value(20))
+                .andExpect(jsonPath("$.page.totalElements").value(1));
     }
 }
