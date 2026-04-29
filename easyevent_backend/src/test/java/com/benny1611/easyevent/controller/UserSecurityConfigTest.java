@@ -473,4 +473,33 @@ public class UserSecurityConfigTest {
                         .content("{}"))
                 .andExpect(expectedResult);
     }
+
+    @Test
+    @WithMockUser(roles = "GUEST")
+    public void recoverGuestShouldReturn403() throws Exception {
+        recoverTest(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void recoverUserShouldReturn403() throws Exception {
+        recoverTest(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void recoverAdminShouldReturn200() throws Exception {
+        recoverTest(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    public void recoverSuperAdminShouldReturn200() throws Exception {
+        recoverTest(status().isOk());
+    }
+
+    private void recoverTest(ResultMatcher expectedResult) throws Exception {
+        mockMvc.perform(post("/api/users/recover?email=test@test.com"))
+                .andExpect(expectedResult);
+    }
 }

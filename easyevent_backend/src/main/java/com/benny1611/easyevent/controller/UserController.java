@@ -184,8 +184,13 @@ public class UserController {
 
     @PostMapping("/recover")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> recoverUser() {
-        return new ResponseEntity<>(HttpStatus.OK); // TODO: implement
+    public ResponseEntity<Void> recoverUser(@RequestParam @Email String email) {
+        if (!email.isBlank()) {
+            userService.recoverAccount(email);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
 }

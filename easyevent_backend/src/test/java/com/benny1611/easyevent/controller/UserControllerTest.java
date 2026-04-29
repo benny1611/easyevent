@@ -560,4 +560,19 @@ public class UserControllerTest {
                         .content("{}"))
                 .andExpect(status().is4xxClientError());
     }
+
+    @Test
+    public void recoverUserTest() throws Exception {
+        mockMvc.perform(post("/api/users/recover?email=test@test.com")
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/users/recover?email=")
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/users/recover")
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isBadRequest());
+    }
 }
