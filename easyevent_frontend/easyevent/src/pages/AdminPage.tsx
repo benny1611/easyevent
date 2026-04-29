@@ -13,11 +13,6 @@ import {
   TextField,
   Select,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Button,
 } from "@mui/material";
 import {
@@ -39,8 +34,10 @@ import { useI18n } from "../i18n/i18nContext";
 import ChangeUserRequest from "../models/dto/ChangeUserRequest";
 import ListUserResponse from "../models/dto/ListUserResponse";
 import BanReasonDialog from "../components/BanReasonDialog";
+import DeleteUserDialog from "../components/DeleteUserDialog";
 import BanRequest from "../models/dto/BanRequest";
 import ChangeRolesRequest from "../models/dto/ChangeRolesRequest";
+import DeletionReason from "../models/dto/DeletionReason";
 
 const EditableCellInput = ({
   value,
@@ -152,8 +149,10 @@ export default function AdminPage() {
           u.email,
           u.profilePicture,
           u.active,
-          u.banned,
+          u.isBanned,
           u.roles,
+          u.softDeleted,
+          u.deletedAt,
         ),
     );
 
@@ -358,16 +357,76 @@ export default function AdminPage() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
+  const getDaysRemaining = (deletedAt: string | null) => {
+    if (!deletedAt) return 0;
+    const deleteDate = new Date(deletedAt);
+    const expiryDate = new Date(deleteDate);
+    expiryDate.setDate(expiryDate.getDate() + 30);
+
+    const now = new Date();
+    const diffTime = expiryDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  const canRestore = (target: ListUserResponse) => {
+    if (!target.softDeleted) return false;
+
+    const targetRole = target.roles[0];
+    if (isSuperAdmin) {
+      return targetRole !== "ROLE_SUPER_ADMIN";
+    }
+    if (currentUser.role === "ROLE_ADMIN") {
+      return targetRole === "ROLE_USER";
+    }
+    return false;
+  };
+
+  const handleRestore = async (user: ListUserResponse) => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${ENV.API_BASE_URL}/users/restore/${user.id}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (!response.ok) throw new Error("Restore failed");
+
+      setSnackbar({
+        open: true,
+        message: "User restored successfully",
+        severity: "success",
+      });
+      fetchUsers();
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to restore user",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmDelete = async (reason: string) => {
     if (!userToDelete) return;
 
     setLoading(true);
     try {
+      const deletionRequest = new DeletionReason(reason); // Use the reason passed from the dialog
       const response = await fetch(
         `${ENV.API_BASE_URL}/users/${userToDelete.id}`,
         {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(deletionRequest),
         },
       );
 
@@ -375,15 +434,14 @@ export default function AdminPage() {
 
       setSnackbar({
         open: true,
-        message: translation.admin.user_deleted,
+        message: "User deleted successfully",
         severity: "success",
       });
-
-      fetchUsers(); // Refresh the list
+      fetchUsers();
     } catch (error) {
       setSnackbar({
         open: true,
-        message: translation.admin.delete_failed,
+        message: "Failed to delete user",
         severity: "error",
       });
     } finally {
@@ -415,7 +473,7 @@ export default function AdminPage() {
         sortable: false,
         renderCell: (params: { row: any }) => {
           const user = params.row;
-          const editable = canEdit(user);
+          const editable = canEdit(user) && !user.softDeleted;
 
           return (
             <Box
@@ -491,12 +549,9 @@ export default function AdminPage() {
         field: "name",
         headerName: translation.admin.name,
         flex: 1,
-        filterOperators: getGridStringOperators().filter(
-          (operator) => operator.value !== "isAnyOf",
-        ),
         renderCell: (params) => {
-          const user = params.row;
-          const editable = canEdit(user);
+          const user = params.row as ListUserResponse;
+          const daysLeft = getDaysRemaining(user.deletedAt);
 
           return (
             <Box
@@ -509,17 +564,16 @@ export default function AdminPage() {
             >
               <EditableCellInput
                 value={user.name}
-                disabled={!editable}
+                disabled={!canEdit(user) || user.softDeleted}
                 onSave={(newValue) => handleChange(user.id, "name", newValue)}
               />
-
-              <Chip
-                label={user.roles[0].replace("ROLE_", "").toLowerCase()}
-                size="small"
-              />
-
-              {user.id === currentUser.id && (
-                <Chip label={translation.admin.you} size="small" />
+              {user.softDeleted && (
+                <Chip
+                  label={`Deleted (${daysLeft}d left)`}
+                  color="error"
+                  size="small"
+                  variant="outlined"
+                />
               )}
             </Box>
           );
@@ -539,7 +593,7 @@ export default function AdminPage() {
             <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
               <EditableCellInput
                 value={user.email}
-                disabled={!isSuperAdmin}
+                disabled={!isSuperAdmin || user.softDeleted}
                 onSave={(newValue) => handleChange(user.id, "email", newValue)}
               />
             </Box>
@@ -583,7 +637,7 @@ export default function AdminPage() {
               }}
             >
               <IconButton
-                disabled={!canEdit(user)}
+                disabled={!canEdit(user) || user.softDeleted}
                 onClick={() => toggleBan(user)}
                 color={user.banned ? "success" : "error"}
               >
@@ -629,6 +683,7 @@ export default function AdminPage() {
                     <Select
                       size="small"
                       value={targetUser.roles[0]}
+                      disabled={targetUser.softDeleted}
                       onChange={(e) =>
                         handleRoleChange(targetUser, e.target.value)
                       }
@@ -667,33 +722,49 @@ export default function AdminPage() {
       {
         field: "actions",
         headerName: "",
-        width: 120,
-        sortable: false,
+        width: 150,
         renderCell: (params) => {
-          const user = params.row;
-          const isTargetSuperAdmin = user.roles[0] === "ROLE_SUPER_ADMIN";
+          const user = params.row as ListUserResponse;
 
+          if (user.softDeleted) {
+            return (
+              <Box
+                sx={{ display: "flex", alignItems: "center", height: "100%" }}
+              >
+                {canRestore(user) && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color="success"
+                    startIcon={<CheckCircleIcon />}
+                    onClick={() => handleRestore(user)}
+                    sx={{ fontSize: "0.75rem" }}
+                  >
+                    Restore
+                  </Button>
+                )}
+              </Box>
+            );
+          }
+
+          // Normal buttons for non-deleted users
           return (
             <Box
               sx={{
                 display: "flex",
                 gap: 1,
                 alignItems: "center",
-                justifyContent: "center",
                 height: "100%",
               }}
             >
               <IconButton
-                disabled={!canEdit(user)}
                 onClick={() => handleSave(user)}
                 color="primary"
                 size="small"
               >
                 <SaveIcon />
               </IconButton>
-
-              {/* DELETE OPTION FOR SUPER ADMIN */}
-              {isSuperAdmin && !isTargetSuperAdmin && (
+              {isSuperAdmin && user.roles[0] !== "ROLE_SUPER_ADMIN" && (
                 <IconButton
                   onClick={() => handleDeleteClick(user)}
                   color="error"
@@ -753,13 +824,13 @@ export default function AdminPage() {
               }}
               onSortModelChange={(model) => setSortModel(model)}
               getRowClassName={(params) =>
-                !canEdit(params.row) ? "disabled-row" : ""
+                params.row.softDeleted ? "soft-deleted-row" : ""
               }
               sx={{
                 border: "none",
-                "& .disabled-row": {
-                  opacity: 0.5,
-                  pointerEvents: "none",
+                "& .soft-deleted-row": {
+                  bgcolor: "action.hover",
+                  color: "text.disabled",
                 },
               }}
             />
@@ -787,31 +858,13 @@ export default function AdminPage() {
         onConfirm={handleConfirmBan}
       />
       {/* Delete Confirmation Dialog */}
-      <Dialog
+      <DeleteUserDialog
         open={deleteDialogOpen}
+        userName={userToDelete?.name}
+        loading={loading}
         onClose={() => setDeleteDialogOpen(false)}
-      >
-        <DialogTitle>{translation.admin.delete_user}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {translation.admin.delete_question}{" "}
-            <strong>{userToDelete?.name}</strong>
-            {translation.admin.delete_question_continuation}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
-            {translation.admin.cancel}
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            color="error"
-            variant="contained"
-          >
-            {translation.admin.delete}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleConfirmDelete}
+      />
 
       <Snackbar
         open={snackbar.open}

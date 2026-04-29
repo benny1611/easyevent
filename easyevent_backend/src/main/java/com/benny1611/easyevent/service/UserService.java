@@ -99,9 +99,6 @@ public class UserService {
             throw new AccessDeniedException("You can't perform that operation");
         }
 
-        UserState inactiveState = userStateRepository.findByName("INACTIVE").orElseThrow(() -> new RuntimeException("Could not find INACTIVE state"));
-        user.setState(inactiveState);
-
         UUID activationToken = UUID.randomUUID();
         user.setActivationToken(activationToken);
         user.setActivationSentAt(OffsetDateTime.now());
@@ -217,6 +214,8 @@ public class UserService {
             result.setEmail(target.getEmail());
             result.setProfilePicture(target.getProfilePictureUrl());
             result.setBanned(isUserBanned(target));
+            result.setDeletedAt(target.getDeletedAt());
+            result.setSoftDeleted(target.isSoftDeleted());
             List<String> roles = target.getRoles().stream().map(Role::getName).toList();
             result.setRoles(roles);
             boolean used = false;
@@ -267,6 +266,8 @@ public class UserService {
             response.setBanned(isUserBanned(target));
             List<String> roles = target.getRoles().stream().map(Role::getName).toList();
             response.setRoles(roles);
+            response.setDeletedAt(target.getDeletedAt());
+            response.setSoftDeleted(target.isSoftDeleted());
             return response;
         } else {
             return null;
@@ -372,6 +373,8 @@ public class UserService {
                     userDTO.setProfilePicture(user.getProfilePictureUrl());
                     userDTO.setActive(user.getState().getName().equalsIgnoreCase("ACTIVE"));
                     userDTO.setBanned(isUserBanned(user));
+                    userDTO.setDeletedAt(user.getDeletedAt());
+                    userDTO.setSoftDeleted(user.isSoftDeleted());
                     List<String> roles = user.getRoles().stream().map(Role::getName).toList();
                     userDTO.setRoles(roles);
                     return userDTO;
@@ -386,8 +389,7 @@ public class UserService {
                 user.setEmail(newMailAddress);
 
                 if (sendActivationMail) {
-                    UserState inactiveState = userStateRepository.findByName("INACTIVE").orElseThrow(() -> new RuntimeException("Could not find INACTIVE state"));
-                    user.setState(inactiveState);
+                    setUserStateInactive(user);
 
                     UUID activationToken = UUID.randomUUID();
                     user.setActivationToken(activationToken);
@@ -577,6 +579,7 @@ public class UserService {
 
         // 1. Mark as deleted
         user.setDeletedAt(OffsetDateTime.now());
+        setUserStateInactive(user);
         userRepository.save(user);
 
         // 2. Audit the action
@@ -625,5 +628,10 @@ public class UserService {
 
     private static boolean hasRole(User user, String role) {
         return user.getRoles().stream().anyMatch(r -> r.getName().equalsIgnoreCase(role));
+    }
+
+    private void setUserStateInactive(User user) {
+        UserState inactiveState = userStateRepository.findByName("INACTIVE").orElseThrow(() -> new RuntimeException("Could not find INACTIVE state"));
+        user.setState(inactiveState);
     }
 }
