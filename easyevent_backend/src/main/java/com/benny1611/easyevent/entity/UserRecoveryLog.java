@@ -3,6 +3,7 @@ package com.benny1611.easyevent.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import jakarta.persistence.Id;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 
@@ -20,6 +21,7 @@ public class UserRecoveryLog {
     @Column(name = "recovered_by_id", nullable = false)
     private Long recoveredById;
 
-    @Column(name = "occurred_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "occurred_at", updatable = false, nullable = false)
     private OffsetDateTime occurredAt;
 }

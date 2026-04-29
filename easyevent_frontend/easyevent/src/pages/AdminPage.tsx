@@ -386,10 +386,13 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${ENV.API_BASE_URL}/users/restore/${user.id}`,
+        `${ENV.API_BASE_URL}/users/recover?email=${user.email}`,
         {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json", 
+          },
         },
       );
 

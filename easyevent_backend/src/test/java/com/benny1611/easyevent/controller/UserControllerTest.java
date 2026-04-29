@@ -563,9 +563,16 @@ public class UserControllerTest {
 
     @Test
     public void recoverUserTest() throws Exception {
+        when(userService.recoverAccount(eq("test@test.com"), any())).thenReturn(true);
+        when(userService.recoverAccount(eq("fail@test.com"), any())).thenReturn(false);
+
         mockMvc.perform(post("/api/users/recover?email=test@test.com")
                         .requestAttr("TEST_USER", admin))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/users/recover?email=fail@test.com")
+                        .requestAttr("TEST_USER", admin))
+                .andExpect(status().isBadRequest());
 
         mockMvc.perform(post("/api/users/recover?email=")
                         .requestAttr("TEST_USER", admin))

@@ -127,8 +127,7 @@ public class UserService {
         user.setActivationSentAt(null);
         Role role = roleRepository.findByName(ROLE_USER_STRING).orElseThrow(() -> new RuntimeException("Could not find the user role"));
         user.setRoles(Set.of(role));
-        UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find active state"));
-        user.setState(activeState);
+        setUserStateActive(user);
 
         user = userRepository.save(user);
 
@@ -176,10 +175,9 @@ public class UserService {
 
     public User activateUser(UUID token) {
         Optional<User> userOptional = userRepository.findByActivationToken(token);
-        UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("could not find the ACTIVE state"));
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            user.setState(activeState);
+            setUserStateActive(user);
             user.setActivationToken(null);
             user.setActivationSentAt(null);
             userRepository.save(user);
@@ -505,7 +503,7 @@ public class UserService {
                                 return false;
                             }
                         } else if (role.getName().equalsIgnoreCase(ROLE_ADMIN_STRING)) {
-                            if (hasRole(target, ROLE_USER_STRING) ||
+                            if (isUser(target) ||
                                     Objects.equals(principal.getUserId(), target.getId())) {
                                 changeRole(target, ROLE_ADMIN_STRING);
                                 return true;
@@ -592,20 +590,44 @@ public class UserService {
     }
 
     @Transactional
-    public void recoverAccount(String email) {
+    public boolean recoverAccount(String email, AuthenticatedUser principal) {
         User user = userRepository.findSoftDeletedByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Account not found or already purged"));
 
-        // Restore the account
-        user.setDeletedAt(null);
-        userRepository.save(user);
+        boolean isActorAdmin = isAdmin(principal);
+        boolean isActorSuperAdmin = isSuperAdmin(principal);
 
-        // Log the recovery
-        UserRecoveryLog log = new UserRecoveryLog();
-        log.setTargetUserId(user.getId());
-        log.setRecoveredById(user.getId());
+        boolean isTargetUser = isUser(user);
+        boolean isTargetAdmin = isAdmin(user);
 
-        recoveryLogRepository.save(log);
+        boolean adminRecoveringUser = (isActorAdmin || isActorSuperAdmin) && isTargetUser;
+        boolean superAdminRecoveringUser = isActorSuperAdmin && isTargetAdmin;
+
+        if (adminRecoveringUser || superAdminRecoveringUser) {
+            // Restore the account
+            user.setDeletedAt(null);
+            setUserStateActive(user);
+            userRepository.save(user);
+
+            // Log the recovery
+            UserRecoveryLog log = new UserRecoveryLog();
+            log.setTargetUserId(user.getId());
+            log.setRecoveredById(user.getId());
+
+            recoveryLogRepository.save(log);
+            return false;
+        }
+
+        return false;
+    }
+
+    private static boolean isUser(User user) {
+        return hasRole(user, ROLE_USER_STRING);
+    }
+
+    private static boolean isUser(AuthenticatedUser principal) {
+        return principal.getAuthorities().stream()
+                .anyMatch(a -> Objects.requireNonNull(a.getAuthority()).equalsIgnoreCase(ROLE_USER_STRING));
     }
 
     private static boolean isAdmin(User user) {
@@ -617,7 +639,7 @@ public class UserService {
                 .anyMatch(a -> Objects.requireNonNull(a.getAuthority()).equalsIgnoreCase(ROLE_ADMIN_STRING));
     }
 
-    private boolean isSuperAdmin(User user) {
+    private static boolean isSuperAdmin(User user) {
         return hasRole(user, ROLE_SUPER_ADMIN_STRING);
     }
 
@@ -633,5 +655,10 @@ public class UserService {
     private void setUserStateInactive(User user) {
         UserState inactiveState = userStateRepository.findByName("INACTIVE").orElseThrow(() -> new RuntimeException("Could not find INACTIVE state"));
         user.setState(inactiveState);
+    }
+
+    private void setUserStateActive(User user) {
+        UserState activeState = userStateRepository.findByName("ACTIVE").orElseThrow(() -> new RuntimeException("Could not find active state"));
+        user.setState(activeState);
     }
 }
