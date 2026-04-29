@@ -615,7 +615,7 @@ public class UserService {
             log.setRecoveredById(principal.getUserId());
 
             recoveryLogRepository.save(log);
-            return false;
+            return true;
         }
 
         return false;
