@@ -612,7 +612,7 @@ public class UserService {
             // Log the recovery
             UserRecoveryLog log = new UserRecoveryLog();
             log.setTargetUserId(user.getId());
-            log.setRecoveredById(user.getId());
+            log.setRecoveredById(principal.getUserId());
 
             recoveryLogRepository.save(log);
             return false;
