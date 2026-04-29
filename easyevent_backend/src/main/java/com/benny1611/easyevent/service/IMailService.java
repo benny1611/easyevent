@@ -11,5 +11,5 @@ public interface IMailService {
     void sendUnbanMail(User user);
     void sendRoleChangeMail(User user, String previousRole, String newRole);
     void sendDeletionMail(User user, boolean byAdmin, String reason);
-    void sendRecoveryMail(User user);
+    void sendRecoveryMail(User user, boolean byAdmin);
 }

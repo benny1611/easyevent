@@ -177,20 +177,37 @@ public class MailServiceImpl implements IMailService {
 
     @Override
     @Async
-    public void sendRecoveryMail(User user) {
+    public void sendRecoveryMail(User user, boolean byAdmin) {
         Locale locale = resolveLocale(user);
 
-        String subject = mailMessageSource.getMessage(
-                "restore.subject",
-                null,
-                locale
-        );
+        String subject;
+        String body;
 
-        String body = mailMessageSource.getMessage(
-                "restore.body",
-                new Object[]{user.getName()},
-                locale
-        );
+        if (byAdmin) {
+            subject = mailMessageSource.getMessage(
+                    "restore.by_admin.subject",
+                    null,
+                    locale
+            );
+
+            body = mailMessageSource.getMessage(
+                    "restore.by_admin.body",
+                    new Object[]{user.getName()},
+                    locale
+            );
+        } else {
+            subject = mailMessageSource.getMessage(
+                    "restore.self.subject",
+                    null,
+                    locale
+            );
+
+            body = mailMessageSource.getMessage(
+                    "restore.self.body",
+                    new Object[]{user.getName()},
+                    locale
+            );
+        }
 
         sendMail(user.getEmail(), subject, body);
     }

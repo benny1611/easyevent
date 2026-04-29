@@ -623,7 +623,9 @@ public class UserService {
 
         recoveryLogRepository.save(log);
 
-        mailService.sendRecoveryMail(user);
+        boolean byAdmin = principal != null;
+
+        mailService.sendRecoveryMail(user, byAdmin);
     }
 
     private static boolean isUser(User user) {
