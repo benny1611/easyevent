@@ -2,6 +2,7 @@ package com.benny1611.easyevent.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 
@@ -26,7 +27,8 @@ public class UserDeletionLog {
     @Column(name = "reason")
     private String reason;
 
-    @Column(name = "occurred_at")
+    @CreationTimestamp
+    @Column(name = "occurred_at", updatable = false, nullable = false)
     private OffsetDateTime occurredAt;
 
 }

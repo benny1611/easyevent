@@ -601,7 +601,6 @@ public class UserService {
         UserRecoveryLog log = new UserRecoveryLog();
         log.setTargetUserId(user.getId());
         log.setRecoveredById(user.getId());
-        log.setOccurredAt(OffsetDateTime.now());
 
         recoveryLogRepository.save(log);
     }

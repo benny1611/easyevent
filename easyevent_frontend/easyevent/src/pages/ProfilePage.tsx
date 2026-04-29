@@ -30,6 +30,7 @@ import { ENV } from "../config/env";
 import UserDTO from "../models/dto/UserDTO";
 import LoginResponse from "../models/dto/LoginResponse";
 import DeleteForever from "@mui/icons-material/DeleteForever";
+import DeletionReason from "../models/dto/DeletionReason";
 
 const ProfilePage = () => {
   const { translation } = useI18n();
@@ -67,11 +68,14 @@ const ProfilePage = () => {
     setError(null);
     try {
       const apiEndpoint = `${ENV.API_BASE_URL}/users/${userId}`;
+      const deletionRequest = new DeletionReason(null);
       const response = await fetch(apiEndpoint, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify(deletionRequest),
       });
 
       if (!response.ok) {
