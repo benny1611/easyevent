@@ -578,6 +578,14 @@ export default function AdminPage() {
                   variant="outlined"
                 />
               )}
+              <Chip
+                label={user.roles[0].replace("ROLE_", "").toLowerCase()}
+                size="small"
+              />
+
+              {user.id === currentUser.id && (
+                <Chip label={translation.admin.you} size="small" />
+              )}
             </Box>
           );
         },
