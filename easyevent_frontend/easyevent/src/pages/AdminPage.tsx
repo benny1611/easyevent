@@ -701,6 +701,7 @@ export default function AdminPage() {
                     <Select
                       size="small"
                       value={targetUser.roles[0]}
+                      disabled={targetUser.softDeleted}
                       onChange={(e) =>
                         handleRoleChange(targetUser, e.target.value)
                       }
