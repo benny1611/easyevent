@@ -396,18 +396,18 @@ export default function AdminPage() {
         },
       );
 
-      if (!response.ok) throw new Error("Restore failed");
+      if (!response.ok) throw new Error(translation.admin.restore_failed);
 
       setSnackbar({
         open: true,
-        message: "User restored successfully",
+        message: translation.admin.restore_successful,
         severity: "success",
       });
       fetchUsers();
     } catch (error) {
       setSnackbar({
         open: true,
-        message: "Failed to restore user",
+        message: translation.admin.restore_failed_user,
         severity: "error",
       });
     } finally {
@@ -752,7 +752,7 @@ export default function AdminPage() {
                     onClick={() => handleRestore(user)}
                     sx={{ fontSize: "0.75rem" }}
                   >
-                    Restore
+                    {translation.admin.restore}
                   </Button>
                 )}
               </Box>

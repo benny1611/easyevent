@@ -10,4 +10,6 @@ public interface IMailService {
     void sendBanMail(User user, String reason);
     void sendUnbanMail(User user);
     void sendRoleChangeMail(User user, String previousRole, String newRole);
+    void sendDeletionMail(User user, boolean byAdmin, String reason);
+    void sendRecoveryMail(User user);
 }

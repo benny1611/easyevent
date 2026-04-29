@@ -138,6 +138,63 @@ public class MailServiceImpl implements IMailService {
         sendMail(user.getEmail(), subject, body);
     }
 
+    @Override
+    @Async
+    public void sendDeletionMail(User user, boolean byAdmin, String reason) {
+        Locale locale = resolveLocale(user);
+
+        String subject;
+        String body;
+
+        if (byAdmin) {
+            subject = mailMessageSource.getMessage(
+                    "delete.by_admin.subject",
+                    null,
+                    locale
+            );
+
+            body = mailMessageSource.getMessage(
+                    "delete.by_admin.body",
+                    new Object[]{user.getName(), reason},
+                    locale
+            );
+        } else {
+            subject = mailMessageSource.getMessage(
+                    "delete.self.subject",
+                    null,
+                    locale
+            );
+
+            body = mailMessageSource.getMessage(
+                    "delete.self.body",
+                    new Object[]{user.getName()},
+                    locale
+            );
+        }
+
+        sendMail(user.getEmail(), subject, body);
+    }
+
+    @Override
+    @Async
+    public void sendRecoveryMail(User user) {
+        Locale locale = resolveLocale(user);
+
+        String subject = mailMessageSource.getMessage(
+                "restore.subject",
+                null,
+                locale
+        );
+
+        String body = mailMessageSource.getMessage(
+                "restore.body",
+                new Object[]{user.getName()},
+                locale
+        );
+
+        sendMail(user.getEmail(), subject, body);
+    }
+
     private void sendMail(String email, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);

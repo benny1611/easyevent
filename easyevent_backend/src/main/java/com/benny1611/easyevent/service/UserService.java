@@ -587,6 +587,8 @@ public class UserService {
         log.setDeletionType(isAdmin ? "ADMIN" : "SELF");
         log.setReason(reason);
         logRepository.save(log);
+
+        mailService.sendDeletionMail(user, isAdmin, reason);
     }
 
     @Transactional
@@ -615,6 +617,8 @@ public class UserService {
             log.setRecoveredById(principal.getUserId());
 
             recoveryLogRepository.save(log);
+
+            mailService.sendRecoveryMail(user);
             return true;
         }
 

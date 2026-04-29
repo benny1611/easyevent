@@ -170,6 +170,10 @@ const en = {
         delete: "Delete",
         delete_question: "Are you sure you want to delete",
         delete_question_continuation: "? This action is permanent and cannot be undone.",
+        restore: "Restore",
+        restore_failed: "Restore failed",
+        restore_failed_user: "Failed to restore user",
+        restore_successful: "User restored successfully",
     }
 };
 
