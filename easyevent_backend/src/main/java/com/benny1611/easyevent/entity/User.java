@@ -12,8 +12,11 @@ import java.util.*;
 
 @Entity
 @Table(name = "users")
-@FilterDef(name = "deletedUserFilter", parameters = @ParamDef(name = "isDeleted", type = Boolean.class))
-@Filter(name = "deletedUserFilter", condition = "deleted_at IS NULL")
+@FilterDef(
+        name = "deletedUserFilter",
+        defaultCondition = "deleted_at IS NULL"
+)
+@Filter(name = "deletedUserFilter")
 @Data
 public class User {
 
