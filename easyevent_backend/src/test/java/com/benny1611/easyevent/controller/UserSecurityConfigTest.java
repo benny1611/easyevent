@@ -33,6 +33,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -499,6 +500,7 @@ public class UserSecurityConfigTest {
     }
 
     private void recoverTest(ResultMatcher expectedResult) throws Exception {
+        when(userService.recoverAccount(any(), any())).thenReturn(true);
         mockMvc.perform(post("/api/users/recover?email=test@test.com"))
                 .andExpect(expectedResult);
     }
