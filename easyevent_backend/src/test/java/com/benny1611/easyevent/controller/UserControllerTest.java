@@ -568,10 +568,6 @@ public class UserControllerTest {
                         .requestAttr("TEST_USER", admin))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/users/recover?email=fail@test.com")
-                        .requestAttr("TEST_USER", admin))
-                .andExpect(status().isBadRequest());
-
         mockMvc.perform(post("/api/users/recover?email=")
                         .requestAttr("TEST_USER", admin))
                 .andExpect(status().isBadRequest());

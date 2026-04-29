@@ -476,15 +476,20 @@ public class UserSecurityConfigTest {
     }
 
     @Test
+    public void recoverWithoutAuthShouldReturn200() throws Exception {
+        recoverTest(status().isOk());
+    }
+
+    @Test
     @WithMockUser(roles = "GUEST")
-    public void recoverGuestShouldReturn403() throws Exception {
-        recoverTest(status().isForbidden());
+    public void recoverGuestShouldReturn200() throws Exception {
+        recoverTest(status().isOk());
     }
 
     @Test
     @WithMockUser(roles = "USER")
-    public void recoverUserShouldReturn403() throws Exception {
-        recoverTest(status().isForbidden());
+    public void recoverUserShouldReturn200() throws Exception {
+        recoverTest(status().isOk());
     }
 
     @Test
