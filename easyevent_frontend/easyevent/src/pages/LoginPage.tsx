@@ -55,8 +55,8 @@ export default function LoginPage() {
       if (!response.ok) {
         const message =
           (await response.text()) || translation.login.invalid_credentials;
-          const err = new Error(message)
-          err.cause = response.status;
+        const err = new Error(message);
+        err.cause = response.status;
         throw err;
       }
 
@@ -82,6 +82,15 @@ export default function LoginPage() {
               setError(translation.login.something_went_wrong);
           }
         } catch (e: any) {
+          try {
+            const errorData = JSON.parse(err.message);
+            if (errorData.message === "ACCOUNT_SOFT_DELETED") {
+              navigate(`/recover?email=${encodeURIComponent(email)}`);
+              return;
+            }
+          } catch (err: any) {
+            // ignore
+          }
           if (err.cause === 401) {
             setError(translation.login.invalid_credentials);
           } else {
@@ -99,7 +108,7 @@ export default function LoginPage() {
       sx={{
         flex: 1,
         display: "flex",
-        mt: 15
+        mt: 15,
       }}
     >
       <Container

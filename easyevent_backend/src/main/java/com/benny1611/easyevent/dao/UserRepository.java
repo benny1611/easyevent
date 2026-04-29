@@ -72,4 +72,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // For the cleanup task
     @Query(value = "SELECT * FROM users WHERE deleted_at <= :threshold", nativeQuery = true)
     List<User> findExpiredSoftDeletedUsers(@Param("threshold") OffsetDateTime threshold);
+
+    @Query(value = "SELECT * FROM users WHERE email = :email AND deleted_at IS NULL", nativeQuery = true)
+    Optional<User> findActiveByEmail(String email);
 }

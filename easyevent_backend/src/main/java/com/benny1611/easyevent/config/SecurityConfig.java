@@ -63,6 +63,10 @@ public class SecurityConfig {
                                 "/users/**",
                                 "/login/oauth2/**",
                                 "/api/auth/login",
+                                "/api/users/recover",
+                                "/api/users/create",
+                                "/api/users/activate",
+                                "/api/users/resend-activation",
                                 "/api/registrations/event/**",
                                 "/api/auth/password-reset/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()

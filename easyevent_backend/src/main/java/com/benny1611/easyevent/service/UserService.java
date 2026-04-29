@@ -4,6 +4,7 @@ import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.*;
 import com.benny1611.easyevent.dto.*;
 import com.benny1611.easyevent.entity.*;
+import com.benny1611.easyevent.exception.AccountSoftDeletedException;
 import com.benny1611.easyevent.exception.RoleNotFoundException;
 import com.benny1611.easyevent.util.JwtUtils;
 import com.benny1611.easyevent.util.LocaleProvider;
@@ -82,6 +83,16 @@ public class UserService {
 
     @Transactional
     public User createUser(CreateUserRequest createUserRequest, MultipartFile profilePicture) throws IOException {
+        Session session = entityManager.unwrap(Session.class);
+
+        // DISABLE the filter so we can see deleted users
+        session.disableFilter("deletedUserFilter");
+
+        Optional<User> softDeletedUserOptional = userRepository.findByEmail(createUserRequest.getEmail());
+        if (softDeletedUserOptional.isPresent()) {
+            throw new AccountSoftDeletedException(createUserRequest.getEmail());
+        }
+
         User user = new User();
 
         user.setName(createUserRequest.getName());
@@ -592,37 +603,27 @@ public class UserService {
     }
 
     @Transactional
-    public boolean recoverAccount(String email, AuthenticatedUser principal) {
+    public void recoverAccount(String email, AuthenticatedUser principal) {
         User user = userRepository.findSoftDeletedByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Account not found or already purged"));
 
-        boolean isActorAdmin = isAdmin(principal);
-        boolean isActorSuperAdmin = isSuperAdmin(principal);
+        // Restore the account
+        user.setDeletedAt(null);
+        setUserStateActive(user);
+        userRepository.save(user);
 
-        boolean isTargetUser = isUser(user);
-        boolean isTargetAdmin = isAdmin(user);
-
-        boolean adminRecoveringUser = (isActorAdmin || isActorSuperAdmin) && isTargetUser;
-        boolean superAdminRecoveringUser = isActorSuperAdmin && isTargetAdmin;
-
-        if (adminRecoveringUser || superAdminRecoveringUser) {
-            // Restore the account
-            user.setDeletedAt(null);
-            setUserStateActive(user);
-            userRepository.save(user);
-
-            // Log the recovery
-            UserRecoveryLog log = new UserRecoveryLog();
-            log.setTargetUserId(user.getId());
+        // Log the recovery
+        UserRecoveryLog log = new UserRecoveryLog();
+        log.setTargetUserId(user.getId());
+        if (principal != null) {
             log.setRecoveredById(principal.getUserId());
-
-            recoveryLogRepository.save(log);
-
-            mailService.sendRecoveryMail(user);
-            return true;
+        } else {
+            log.setRecoveredById(user.getId());
         }
 
-        return false;
+        recoveryLogRepository.save(log);
+
+        mailService.sendRecoveryMail(user);
     }
 
     private static boolean isUser(User user) {

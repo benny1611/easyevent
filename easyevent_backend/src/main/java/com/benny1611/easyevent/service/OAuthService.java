@@ -3,7 +3,11 @@ package com.benny1611.easyevent.service;
 import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.dto.OauthCodeRequest;
 import com.benny1611.easyevent.entity.User;
+import com.benny1611.easyevent.exception.AccountSoftDeletedException;
 import com.benny1611.easyevent.util.JwtUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +21,9 @@ public class OAuthService {
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
 
     @Autowired
     public OAuthService(OAuthCodeService codeService, JwtUtils jwtUtils, UserRepository userRepository) {
@@ -28,9 +35,19 @@ public class OAuthService {
     @Transactional
     public String exchange(OauthCodeRequest request) {
         Long userID = codeService.consume(request.getCode());
-        User user = userRepository.findByIdWithRolesAndState(userID).orElseThrow(() -> new RuntimeException("Could not find user: " + userID));
-        OffsetDateTime now = OffsetDateTime.now();
-        user.setLastLoginAt(now);
+
+        Session session = entityManager.unwrap(Session.class);
+
+        // DISABLE the filter so we can see deleted users
+        session.disableFilter("deletedUserFilter");
+        User user = userRepository.findById(userID)
+                .orElseThrow(() -> new RuntimeException("Could not find user: " + userID));
+
+        if (user.getDeletedAt() != null) {
+            throw new AccountSoftDeletedException(user.getEmail());
+        }
+
+        user.setLastLoginAt(OffsetDateTime.now());
         userRepository.save(user);
         return jwtUtils.generateToken(user);
     }

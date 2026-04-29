@@ -30,13 +30,16 @@ const OAuthCallback = () => {
       },
       body: JSON.stringify({ code }),
     })
-      .then((res) => {
+      .then(async (res) => {
+        const data = await res.json();
         if (!res.ok) {
-          throw new Error("OAuth exchange failed");
+          if (data.message === "ACCOUNT_SOFT_DELETED") {
+            navigate(`/recover?email=${encodeURIComponent(data.email)}`);
+          } else {
+            throw new Error("OAuth exchange failed");
+          }
+          return;
         }
-        return res.json();
-      })
-      .then((data) => {
         login(new LoginResponse(data.token));
         navigate("/", { replace: true });
       })

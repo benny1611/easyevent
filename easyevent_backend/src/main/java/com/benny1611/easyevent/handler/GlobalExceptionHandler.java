@@ -1,6 +1,7 @@
 package com.benny1611.easyevent.handler;
 
 import com.benny1611.easyevent.dto.ApiError;
+import com.benny1611.easyevent.exception.AccountSoftDeletedException;
 import com.benny1611.easyevent.exception.RoleNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -129,5 +131,13 @@ public class GlobalExceptionHandler {
                 "You do not have the required role.",
                 request.getRequestURI());
         return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(AccountSoftDeletedException.class)
+    public ResponseEntity<Map<String, String>> handleSoftDeleted(AccountSoftDeletedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "message", "ACCOUNT_SOFT_DELETED",
+                "email", ex.getEmail()
+        ));
     }
 }

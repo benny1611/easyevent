@@ -163,7 +163,7 @@ const RegisterPage: React.FC = () => {
         email: "",
         password: "",
         repeatPassword: "",
-        profilePicture: undefined
+        profilePicture: undefined,
       }));
       setAvatarPreview(null);
       setTimeout(() => {
@@ -171,6 +171,15 @@ const RegisterPage: React.FC = () => {
         setSuccess(false);
       }, 5000);
     } catch (err: any) {
+      try {
+        const errorData = JSON.parse(err.message);
+        if (errorData.message === "ACCOUNT_SOFT_DELETED") {
+          navigate(`/recover?email=${encodeURIComponent(form.email)}`);
+          return;
+        }
+      } catch (err: any) {
+        // ignore
+      }
       setError(err.message ?? "Something went wrong");
       setSuccess(false);
     } finally {

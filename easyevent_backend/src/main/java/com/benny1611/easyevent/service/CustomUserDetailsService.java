@@ -3,6 +3,7 @@ package com.benny1611.easyevent.service;
 import com.benny1611.easyevent.dao.UserRepository;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
+import com.benny1611.easyevent.exception.AccountSoftDeletedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,6 +12,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -21,10 +23,24 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmailWithRoles(email).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        Optional<User> activeUser = userRepository.findActiveByEmail(email);
 
-        Set<Role> roles = user.getRoles();
-        List<SimpleGrantedAuthority> authorities = roles.stream().map(role -> new SimpleGrantedAuthority(role.getName())).toList();
+        if (activeUser.isPresent()) {
+            return buildUserDetails(activeUser.get());
+        }
+
+        Optional<User> deletedUser = userRepository.findSoftDeletedByEmail(email);
+        if (deletedUser.isPresent()) {
+            throw new AccountSoftDeletedException(deletedUser.get().getEmail());
+        }
+
+        throw new UsernameNotFoundException("User not found with email: " + email);
+    }
+
+    private UserDetails buildUserDetails(User user) {
+        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .toList();
 
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())

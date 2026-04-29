@@ -500,7 +500,6 @@ public class UserSecurityConfigTest {
     }
 
     private void recoverTest(ResultMatcher expectedResult) throws Exception {
-        when(userService.recoverAccount(any(), any())).thenReturn(true);
         mockMvc.perform(post("/api/users/recover?email=test@test.com"))
                 .andExpect(expectedResult);
     }
