@@ -16,8 +16,7 @@ public class SoftDeleteAspect {
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Before("@within(com.benny1611.easyevent.annotation.ApplySoftDeleteFilter) || " +
-            "@annotation(com.benny1611.easyevent.annotation.ApplySoftDeleteFilter)")
+    @Before("execution(* com.benny1611.easyevent.service.*.*(..))")
     public void enableSoftDeleteFilter() {
         entityManager.unwrap(Session.class).enableFilter("deletedUserFilter");
     }
