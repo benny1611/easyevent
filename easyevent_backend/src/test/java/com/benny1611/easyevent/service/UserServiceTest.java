@@ -361,4 +361,90 @@ class UserServiceTest {
         assertNull(result);
         verify(userRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Should update token and send mail when user is NOT active")
+    void resendActivation_UserNotActive_Success() {
+        // Arrange
+        String email = "inactive@test.com";
+        User user = new User();
+        user.setEmail(email);
+
+        // Mocking the state hierarchy: user -> state -> name
+        UserState inactiveState = mock(UserState.class);
+        when(inactiveState.getName()).thenReturn("PENDING");
+        user.setState(inactiveState);
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        // Act
+        userService.resendActivation(email);
+
+        // Assert
+        assertNotNull(user.getActivationToken(), "A new token should have been generated");
+        assertNotNull(user.getActivationSentAt(), "Timestamp should be set");
+
+        verify(userRepository).save(user);
+        verify(mailService).sendActivationEmail(user);
+    }
+
+    @Test
+    @DisplayName("Should do nothing if user is already ACTIVE")
+    void resendActivation_UserAlreadyActive_DoesNothing() {
+        // Arrange
+        String email = "active@test.com";
+        User user = new User();
+
+        UserState activeState = mock(UserState.class);
+        when(activeState.getName()).thenReturn("ACTIVE");
+        user.setState(activeState);
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+        // Act
+        userService.resendActivation(email);
+
+        // Assert
+        verify(userRepository, never()).save(any());
+        verify(mailService, never()).sendActivationEmail(any());
+    }
+
+    @Test
+    @DisplayName("Should do nothing if user is not found")
+    void resendActivation_UserNotFound_DoesNothing() {
+        // Arrange
+        String email = "ghost@test.com";
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        // Act
+        userService.resendActivation(email);
+
+        // Assert
+        verify(userRepository, never()).save(any());
+        verify(mailService, never()).sendActivationEmail(any());
+    }
+
+    @Test
+    @DisplayName("Should generate a unique token every time it is called")
+    void resendActivation_GeneratesNewToken() {
+        // Arrange
+        String email = "inactive@test.com";
+        User user = new User();
+        UUID oldToken = UUID.randomUUID();
+        user.setActivationToken(oldToken);
+
+        UserState inactiveState = mock(UserState.class);
+        when(inactiveState.getName()).thenReturn("INACTIVE");
+        user.setState(inactiveState);
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+        // Act
+        userService.resendActivation(email);
+
+        // Assert
+        assertNotEquals(oldToken, user.getActivationToken(), "The old token should have been replaced");
+        verify(userRepository).save(user);
+    }
 }
