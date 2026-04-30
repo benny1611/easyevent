@@ -265,7 +265,14 @@ public class UserService {
             String newName = changeUserRequest.getName();
             boolean nameChanged = changeName(newName, target);
 
-            if (nameChanged || mailChanged) {
+            boolean profilePictureChanged = false;
+            if (profilePicture != null && !profilePicture.isEmpty()) {
+                String profilePicUrl = profileImageService.saveAsPng(profilePicture, target.getId());
+                target.setProfilePictureUrl(profilePicUrl);
+                profilePictureChanged = true;
+            }
+
+            if (nameChanged || mailChanged || profilePictureChanged) {
                 userRepository.save(target);
             }
             response.setId(target.getId());
