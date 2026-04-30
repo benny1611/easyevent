@@ -8,12 +8,12 @@ import {
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ENV } from "../config/env";
-//import { useI18n } from "../i18n/i18nContext";
+import { useI18n } from "../i18n/i18nContext";
 
 export default function RecoveryPage() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
-  //const { translation } = useI18n();
+  const { translation } = useI18n();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,10 +30,10 @@ export default function RecoveryPage() {
         // Recovery successful! Send them back to login
         navigate("/login", { state: { recovered: true } });
       } else {
-        setError("Failed to recover account.");
+        setError(translation.recover_dialog.recover_fail);
       }
     } catch (err) {
-      setError("Server unreachable.");
+      setError(translation.recover_dialog.server_unreachable);
     } finally {
       setLoading(false);
     }
@@ -42,10 +42,9 @@ export default function RecoveryPage() {
   return (
     <Container maxWidth="sm" sx={{ mt: 15 }}>
       <Stack spacing={3} alignItems="center">
-        <Typography variant="h4">Recover Your Account</Typography>
+        <Typography variant="h4">{translation.recover_dialog.title}</Typography>
         <Typography textAlign="center">
-          The account for <strong>{email}</strong> is scheduled for deletion.
-          Would you like to restore it and keep your data?
+          {translation.recover_dialog.question_part_1} <strong>{email}</strong> {translation.recover_dialog.question_part_2}
         </Typography>
         {error && <Alert severity="error">{error}</Alert>}
         <Button
@@ -54,10 +53,10 @@ export default function RecoveryPage() {
           onClick={handleRecover}
           disabled={loading || !email}
         >
-          {loading ? "Restoring..." : "Yes, Restore My Account"}
+          {loading ? translation.recover_dialog.restoring : translation.recover_dialog.restore_confirmation}
         </Button>
         <Button variant="text" onClick={() => navigate("/login")}>
-          Cancel
+          {translation.recover_dialog.cancel}
         </Button>
       </Stack>
     </Container>

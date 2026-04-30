@@ -164,10 +164,6 @@ const en = {
         confirm_ban: "Confirm Ban",
         cancel: "Cancel",
         ban_user: "Ban User:",
-        user_deleted: "User deleted successfully",
-        delete_failed: "Failed to delete user",
-        delete_user: "Delete User",
-        delete: "Delete",
         restore: "Restore",
         restore_failed: "Restore failed",
         restore_failed_user: "Failed to restore user",
@@ -181,6 +177,16 @@ const en = {
         cancel: "Cancel",
         delete: "Delete",
         delete_user: "Delete User",
+    },
+    recover_dialog: {
+        recover_fail: "Failed to recover account.",
+        server_unreachable: "Server unreachable.",
+        title: "Recover Your Account",
+        question_part_1: "The account for ",
+        question_part_2: "is scheduled for deletion. Would you like to restore it and keep your data?",
+        restoring: "Restoring...",
+        restore_confirmation: "Yes, Restore My Account",
+        cancel: "Cancel",
     }
 };
 
