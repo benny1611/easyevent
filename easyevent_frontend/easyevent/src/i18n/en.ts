@@ -145,7 +145,7 @@ const en = {
         resend_now: "RESEND NOW",
         sending: "SENDING...",
     },
-    languages: [{name: "English", code: "en"}, {name: "German", code: "de"}, {name: "Romanian", code: "ro"}],
+    languages: [{ name: "English", code: "en" }, { name: "German", code: "de" }, { name: "Romanian", code: "ro" }],
     admin: {
         panel: "Admin Panel",
         profilePicture: "Profile picture",
@@ -168,12 +168,19 @@ const en = {
         delete_failed: "Failed to delete user",
         delete_user: "Delete User",
         delete: "Delete",
-        delete_question: "Are you sure you want to delete",
-        delete_question_continuation: "? This action is permanent and cannot be undone.",
         restore: "Restore",
         restore_failed: "Restore failed",
         restore_failed_user: "Failed to restore user",
         restore_successful: "User restored successfully",
+    },
+    delete_dialog: {
+        delete_question: "Are you sure you want to delete",
+        delete_question_continuation: "? This is a soft delete; you have 30 days to revert this action.",
+        reason: "Reason for deletion",
+        reason_helper: "You must provide a reason to delete this user.",
+        cancel: "Cancel",
+        delete: "Delete",
+        delete_user: "Delete User",
     }
 };
 
