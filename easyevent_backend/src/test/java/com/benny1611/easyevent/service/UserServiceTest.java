@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 
 import com.benny1611.easyevent.auth.AuthenticatedUser;
@@ -80,10 +81,11 @@ class UserServiceTest {
         validRequest.setEmail("test@test.com");
         validRequest.setRoles(Set.of("ROLE_USER"));
 
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         Role userRole = new Role();
         userRole.setName("ROLE_USER");
         when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
+
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(any())).thenReturn("hash");
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -160,13 +162,15 @@ class UserServiceTest {
         String name = "OAuth User";
         String picUrl = "https://example.com/photo.jpg";
         byte[] mockBytes = new byte[]{1, 2, 3};
+
         Role userRole = new Role();
         userRole.setName("ROLE_USER");
+        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
+
         UserState activeState = new UserState();
         activeState.setName("ACTIVE");
-
-        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
         when(userStateRepository.findByName("ACTIVE")).thenReturn(Optional.of(activeState));
+
         when(userRepository.save(any(User.class))).thenAnswer(i -> {
             User u = i.getArgument(0);
             if (u.getId() == null) u.setId((long) (Math.random() * 100000L)); // Simulate DB assigning ID
@@ -200,12 +204,13 @@ class UserServiceTest {
 
         Role userRole = new Role();
         userRole.setName("ROLE_USER");
+        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
+
         UserState activeState = new UserState();
         activeState.setName("ACTIVE");
-
-        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
-        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
         when(userStateRepository.findByName("ACTIVE")).thenReturn(Optional.of(activeState));
+
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         // Simulate static method throwing an exception
         try (MockedStatic<ProfileImageService> mockedStatic = mockStatic(ProfileImageService.class)) {
@@ -309,5 +314,51 @@ class UserServiceTest {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertNull(userService.findById(principal));
+    }
+
+    @Test
+    @DisplayName("Should delegate call to repository")
+    void findByEmail_Delegate() {
+        String email = "find@me.com";
+        userService.findByEmail(email);
+        verify(userRepository).findByEmail(email);
+    }
+
+    @Test
+    @DisplayName("Should activate user and clear token when token is valid")
+    void activateUser_Success() {
+        // Arrange
+        UUID token = UUID.randomUUID();
+        User user = new User();
+        user.setActivationToken(token);
+
+        UserState activeState = new UserState();
+        activeState.setName("ACTIVE");
+        when(userStateRepository.findByName("ACTIVE")).thenReturn(Optional.of(activeState));
+
+        when(userRepository.findByActivationToken(token)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        // Act
+        User result = userService.activateUser(token);
+
+        // Assert
+        assertNotNull(result);
+        assertNull(result.getActivationToken());
+        assertNull(result.getActivationSentAt());
+        // Verify setUserStateActive was effectively called (assuming it changes a field)
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should return null if token does not exist")
+    void activateUser_InvalidToken() {
+        UUID token = UUID.randomUUID();
+        when(userRepository.findByActivationToken(token)).thenReturn(Optional.empty());
+
+        User result = userService.activateUser(token);
+
+        assertNull(result);
+        verify(userRepository, never()).save(any());
     }
 }
