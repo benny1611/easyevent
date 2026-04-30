@@ -8,11 +8,12 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 
+import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.*;
 import com.benny1611.easyevent.dto.CreateUserRequest;
+import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
 import com.benny1611.easyevent.entity.UserState;
@@ -236,5 +237,77 @@ class UserServiceTest {
 
         assertEquals("Could not find the user role", ex.getMessage());
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return UserDTO when principal and user exist")
+    void findById_Success() {
+        // Arrange
+        AuthenticatedUser principal = mock(AuthenticatedUser.class);
+        when(principal.getUserId()).thenReturn(1L);
+
+        User user = new User();
+        user.setEmail("test@example.com");
+        user.setName("Test User");
+        user.setLanguage("en");
+        user.setProfilePictureUrl("http://image.url");
+        user.setPassword(null); // Testing the logic: setLocalPasswordSet(true) if null
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        // Act
+        UserDTO result = userService.findById(principal);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("test@example.com", result.getEmail());
+        assertTrue(result.isLocalPasswordSet()); // Based on user.getPassword() == null
+        verify(userRepository).findById(1L);
+    }
+
+    @Test
+    @DisplayName("Should return UserDTO when principal and user exist")
+    void findById_Success_2() {
+        // Arrange
+        AuthenticatedUser principal = mock(AuthenticatedUser.class);
+        when(principal.getUserId()).thenReturn(1L);
+
+        User user = new User();
+        user.setEmail("test@example.com");
+        user.setName("Test User");
+        user.setLanguage("en");
+        user.setProfilePictureUrl("http://image.url");
+        user.setPassword("test"); // Testing the logic: setLocalPasswordSet(true) if null
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        // Act
+        UserDTO result = userService.findById(principal);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("test@example.com", result.getEmail());
+        assertFalse(result.isLocalPasswordSet()); // Based on user.getPassword() == null
+        verify(userRepository).findById(1L);
+    }
+
+    @Test
+    @DisplayName("Should return null when principal or ID is null")
+    void findById_NullInput() {
+        assertNull(userService.findById(null));
+
+        AuthenticatedUser principalNoId = mock(AuthenticatedUser.class);
+        when(principalNoId.getUserId()).thenReturn(null);
+        assertNull(userService.findById(principalNoId));
+    }
+
+    @Test
+    @DisplayName("Should return null when user is not found in database")
+    void findById_NotFound() {
+        AuthenticatedUser principal = mock(AuthenticatedUser.class);
+        when(principal.getUserId()).thenReturn(99L);
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertNull(userService.findById(principal));
     }
 }
