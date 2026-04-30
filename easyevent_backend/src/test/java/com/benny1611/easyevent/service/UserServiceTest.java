@@ -8,12 +8,14 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 
 import com.benny1611.easyevent.dao.*;
 import com.benny1611.easyevent.dto.CreateUserRequest;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
+import com.benny1611.easyevent.entity.UserState;
 import com.benny1611.easyevent.exception.AccountSoftDeletedException;
 import com.benny1611.easyevent.exception.RoleNotFoundException;
 import com.benny1611.easyevent.util.JwtUtils;
@@ -26,10 +28,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -145,5 +149,92 @@ class UserServiceTest {
         assertThrows(RoleNotFoundException.class, () -> {
             userService.createUser(validRequest, null);
         });
+    }
+
+    @Test
+    @DisplayName("Should create user and download profile picture successfully")
+    void createUser_WithUrl_Success() throws IOException {
+        // Arrange
+        String email = "oauth@test.com";
+        String name = "OAuth User";
+        String picUrl = "https://example.com/photo.jpg";
+        byte[] mockBytes = new byte[]{1, 2, 3};
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+        UserState activeState = new UserState();
+        activeState.setName("ACTIVE");
+
+        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
+        when(userStateRepository.findByName("ACTIVE")).thenReturn(Optional.of(activeState));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> {
+            User u = i.getArgument(0);
+            if (u.getId() == null) u.setId((long) (Math.random() * 100000L)); // Simulate DB assigning ID
+            return u;
+        });
+
+        when(profileImageService.saveAsPng(eq(mockBytes), any())).thenReturn("http://cdn.com/saved.png");
+
+        // Mocking the static method
+        try (MockedStatic<ProfileImageService> mockedStatic = mockStatic(ProfileImageService.class)) {
+            mockedStatic.when(() -> ProfileImageService.downloadImage(picUrl)).thenReturn(mockBytes);
+
+            // Act
+            User result = userService.createUser(email, name, picUrl);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals("http://cdn.com/saved.png", result.getProfilePictureUrl());
+            assertEquals(email, result.getEmail());
+            verify(userRepository, times(2)).save(any(User.class));
+        }
+    }
+
+    @Test
+    @DisplayName("Should create user even if profile picture download fails")
+    void createUser_WithUrl_DownloadFails() throws IOException {
+        // Arrange
+        String email = "oauth@test.com";
+        String name = "OAuth User";
+        String picUrl = "https://broken-link.com/photo.jpg";
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+        UserState activeState = new UserState();
+        activeState.setName("ACTIVE");
+
+        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+        when(userStateRepository.findByName("ACTIVE")).thenReturn(Optional.of(activeState));
+
+        // Simulate static method throwing an exception
+        try (MockedStatic<ProfileImageService> mockedStatic = mockStatic(ProfileImageService.class)) {
+            mockedStatic.when(() -> ProfileImageService.downloadImage(anyString()))
+                    .thenThrow(new RuntimeException("Network Error"));
+
+            // Act
+            User result = userService.createUser(email, name, picUrl);
+
+            // Assert
+            assertNotNull(result);
+            assertNull(result.getProfilePictureUrl(), "Profile URL should be null if download fails");
+            // Should only save once because the second save is inside the if(profilePicUrl != null) block
+            verify(userRepository, times(1)).save(any(User.class));
+            verify(profileImageService, never()).saveAsPng((MultipartFile) any(), any());
+        }
+    }
+
+    @Test
+    @DisplayName("Should throw RuntimeException when ROLE_USER is missing in DB")
+    void createUser_RoleNotFound_ThrowsException() {
+        // Arrange
+        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+            userService.createUser("test@test.com", "Test", null);
+        });
+
+        assertEquals("Could not find the user role", ex.getMessage());
+        verify(userRepository, never()).save(any());
     }
 }
