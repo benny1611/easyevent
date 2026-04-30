@@ -632,11 +632,6 @@ public class UserService {
         return hasRole(user, ROLE_USER_STRING);
     }
 
-    private static boolean isUser(AuthenticatedUser principal) {
-        return principal.getAuthorities().stream()
-                .anyMatch(a -> Objects.requireNonNull(a.getAuthority()).equalsIgnoreCase(ROLE_USER_STRING));
-    }
-
     private static boolean isAdmin(User user) {
         return hasRole(user, ROLE_ADMIN_STRING);
     }
