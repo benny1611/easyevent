@@ -6,14 +6,14 @@ import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 
 import com.benny1611.easyevent.auth.AuthenticatedUser;
 import com.benny1611.easyevent.dao.*;
+import com.benny1611.easyevent.dto.ChangeUserRequest;
 import com.benny1611.easyevent.dto.CreateUserRequest;
+import com.benny1611.easyevent.dto.ListUserResponse;
 import com.benny1611.easyevent.dto.UserDTO;
 import com.benny1611.easyevent.entity.Role;
 import com.benny1611.easyevent.entity.User;
@@ -33,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,6 +61,8 @@ class UserServiceTest {
     private UserService userService;
 
     private CreateUserRequest validRequest;
+    private User targetUser;
+    private ChangeUserRequest request;
 
     @BeforeEach
     void setUp() {
@@ -71,6 +74,20 @@ class UserServiceTest {
         validRequest.setEmail("john@example.com");
         validRequest.setPassword("securePassword");
         validRequest.setRoles(Set.of("ROLE_USER"));
+
+        targetUser = new User();
+        targetUser.setId(100L);
+        targetUser.setName("Old Name");
+        targetUser.setEmail("target@test.com");
+
+        UserState state = new UserState();
+        state.setName("ACTIVE");
+        targetUser.setState(state);
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+        targetUser.setRoles(Set.of(userRole));
+
+        request = new ChangeUserRequest();
     }
 
     @Test
@@ -446,5 +463,142 @@ class UserServiceTest {
         // Assert
         assertNotEquals(oldToken, user.getActivationToken(), "The old token should have been replaced");
         verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Super Admin should be able to modify anyone")
+    void updateByAdmin_SuperAdmin_Success() throws IOException {
+        // Arrange
+        AuthenticatedUser superAdmin = mock(AuthenticatedUser.class);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")))
+                .when(superAdmin).getAuthorities();
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        targetUser.setName("test");
+
+        UserState bannedState = new UserState();
+        bannedState.setName("BANNED");
+        when(userStateRepository.findByName("BANNED")).thenReturn(Optional.of(bannedState));
+
+        request.setName("test");
+
+        String picture = "smile";
+        MockMultipartFile profilePicture = new MockMultipartFile(
+                "profilePicture", "", "application/json", picture.getBytes()
+        );
+        MockMultipartFile emptyProfilePicture = new MockMultipartFile(
+                "profilePicture", "", "application/json", new byte[]{}
+        );
+
+        when(profileImageService.saveAsPng(profilePicture, 100L)).thenReturn("/saved/pic");
+
+        // Act
+        ListUserResponse response = userService.updateUserByAdmin(superAdmin, 100L, request, null);
+        targetUser.setName("test2");
+        ListUserResponse response2 = userService.updateUserByAdmin(superAdmin, 100L, request, profilePicture);
+        request.setName(null);
+        ListUserResponse response3 = userService.updateUserByAdmin(superAdmin, 100L, request, emptyProfilePicture);
+
+
+        // Assert
+        assertNotNull(response);
+        assertNotNull(response2);
+        assertNotNull(response3);
+        verify(userRepository, times(1)).save(targetUser);
+    }
+
+    @Test
+    @DisplayName("Admin should be able to modify a standard USER")
+    void updateByAdmin_AdminModifyingUser_Success() throws IOException {
+        // Arrange
+        AuthenticatedUser admin = mock(AuthenticatedUser.class);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                .when(admin).getAuthorities();
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+        targetUser.setRoles(Set.of(userRole));
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+
+        UserState bannedState = new UserState();
+        bannedState.setName("BANNED");
+        when(userStateRepository.findByName("BANNED")).thenReturn(Optional.of(bannedState));
+
+        request.setName("test");
+
+        // Act
+        ListUserResponse response = userService.updateUserByAdmin(admin, 100L, request, null);
+
+        // Assert
+        assertNotNull(response);
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    @DisplayName("Admin should NOT be able to modify another ADMIN")
+    void updateByAdmin_AdminModifyingAdmin_ReturnsNull() throws IOException {
+        // Arrange
+        AuthenticatedUser admin = mock(AuthenticatedUser.class);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                .when(admin).getAuthorities();
+        when(admin.getUserId()).thenReturn(50L); // Different ID
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_ADMIN");
+        targetUser.setRoles(Set.of(userRole));
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+
+        // Act
+        ListUserResponse response = userService.updateUserByAdmin(admin, 100L, request, null);
+
+        // Assert
+        assertNull(response, "Admin should not have permission to modify another Admin");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("User should be able to modify themselves (ID match)")
+    void updateByAdmin_SelfUpdate_Success() throws IOException {
+        // Arrange
+        AuthenticatedUser userPrincipal = mock(AuthenticatedUser.class);
+        when(userPrincipal.getUserId()).thenReturn(100L); // IDs match
+        // No special roles
+        doReturn(Collections.emptyList()).when(userPrincipal).getAuthorities();
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+
+        UserState bannedState = new UserState();
+        bannedState.setName("BANNED");
+        when(userStateRepository.findByName("BANNED")).thenReturn(Optional.of(bannedState));
+
+        request.setName("test");
+
+        // Act
+        ListUserResponse response = userService.updateUserByAdmin(userPrincipal, 100L, request, null);
+
+        // Assert
+        assertNotNull(response);
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    @DisplayName("User should NOT be able to modify someone else")
+    void updateByAdmin_OtherUser_ReturnsNull() throws IOException {
+        // Arrange
+        AuthenticatedUser otherUser = mock(AuthenticatedUser.class);
+        when(otherUser.getUserId()).thenReturn(999L); // ID mismatch
+        doReturn(Collections.emptyList()).when(otherUser).getAuthorities();
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+        targetUser.setRoles(Set.of(userRole));
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+
+        // Act
+        ListUserResponse response = userService.updateUserByAdmin(otherUser, 100L, request, null);
+
+        // Assert
+        assertNull(response);
+        verify(userRepository, never()).save(any());
     }
 }
