@@ -726,4 +726,144 @@ class UserServiceTest {
         assertNull(response);
         verify(userRepository, never()).save(any());
     }
+
+    @Test
+    void updateUser_SuccessfulBasicInfoUpdate() throws IOException {
+        // Arrange
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(100L);
+        userDTO.setName("New Name");
+        userDTO.setEmail("new@example.com");
+        userDTO.setOldPassword("oldPassword");
+        userDTO.setNewPassword("newPassword");
+        targetUser.setPassword("oldPasswordHash");
+
+        AuthenticatedUser mockPrincipal = mock(AuthenticatedUser.class);
+        when(mockPrincipal.getUserId()).thenReturn(100L);
+
+        UserState inactiveState = new UserState();
+        inactiveState.setName("INACTIVE");
+        when(userStateRepository.findByName("INACTIVE")).thenReturn(Optional.of(inactiveState));
+        when(passwordEncoder.matches("oldPassword", "oldPasswordHash")).thenReturn(true);
+        when(passwordEncoder.encode("newPassword")).thenReturn("newPassword");
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        when(jwtUtils.generateToken(any(User.class))).thenReturn("mock-jwt-token");
+
+        // Act
+        UserDTO result = userService.updateUser(mockPrincipal, userDTO, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("New Name", result.getName());
+        assertEquals("new@example.com", result.getEmail());
+        assertEquals("mock-jwt-token", result.getToken());
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    void updateUser_ChangePassword_Success() throws IOException {
+        // Arrange
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(100L);
+        userDTO.setOldPassword("correctPassword");
+        userDTO.setNewPassword("newSecret");
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        when(passwordEncoder.encode("newSecret")).thenReturn("encodedNewSecret");
+
+        AuthenticatedUser mockPrincipal = mock(AuthenticatedUser.class);
+        when(mockPrincipal.getUserId()).thenReturn(100L);
+
+        // Act
+        UserDTO result = userService.updateUser(mockPrincipal, userDTO, null);
+
+        // Assert
+        assertNotNull(result);
+        verify(passwordEncoder).encode("newSecret");
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    void updateUser_ChangePassword_WrongOldPassword_ThrowsException() {
+        // Arrange
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(100L);
+        userDTO.setOldPassword("wrongPassword");
+        userDTO.setNewPassword("newSecret");
+        targetUser.setPassword("encodedPassword");
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        when(passwordEncoder.matches("wrongPassword", "encodedPassword")).thenReturn(false);
+
+        AuthenticatedUser mockPrincipal = mock(AuthenticatedUser.class);
+        when(mockPrincipal.getUserId()).thenReturn(100L);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            userService.updateUser(mockPrincipal, userDTO, null);
+        });
+    }
+
+    @Test
+    void updateUser_WithProfilePicture() throws IOException {
+        // Arrange
+        MultipartFile mockFile = mock(MultipartFile.class);
+        when(mockFile.isEmpty()).thenReturn(false);
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        when(profileImageService.saveAsPng((MultipartFile) any(), anyLong())).thenReturn("http://images.com/profile.png");
+
+        AuthenticatedUser mockPrincipal = mock(AuthenticatedUser.class);
+        when(mockPrincipal.getUserId()).thenReturn(100L);
+
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(100L);
+        userDTO.setName("Old Name");
+        userDTO.setEmail("target@test.com");
+
+        // Act
+        UserDTO result = userService.updateUser(mockPrincipal, userDTO, mockFile);
+
+        // Assert
+        assertEquals("http://images.com/profile.png", result.getProfilePicture());
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    void updateUser_LanguageUpdate() throws IOException {
+        // Arrange
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(100L);
+        userDTO.setLanguage("fr");
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        when(localeProvider.supports(any(Locale.class))).thenReturn(true);
+
+        AuthenticatedUser mockPrincipal = mock(AuthenticatedUser.class);
+        when(mockPrincipal.getUserId()).thenReturn(100L);
+
+        // Act
+        UserDTO result = userService.updateUser(mockPrincipal, userDTO, null);
+
+        // Assert
+        assertEquals("fr", result.getLanguage());
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    void updateUser_NoChanges_ReturnsNull() throws IOException {
+        // Arrange
+        // DTO has same values as existingUser, or no values set
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(100L);
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+
+        AuthenticatedUser mockPrincipal = mock(AuthenticatedUser.class);
+        when(mockPrincipal.getUserId()).thenReturn(100L);
+
+        // Act
+        UserDTO result = userService.updateUser(mockPrincipal, userDTO, null);
+
+        // Assert
+        assertNull(result);
+        verify(userRepository, never()).save(any());
+    }
 }
