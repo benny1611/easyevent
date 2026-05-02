@@ -32,6 +32,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -865,5 +869,84 @@ class UserServiceTest {
         // Assert
         assertNull(result);
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void getAllUsers_ShouldReturnMappedPage() {
+        // --- 1. Arrange ---
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // Mocking the EntityManager/Session unwrap
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+
+        UserState bannedState = new UserState();
+        bannedState.setName("BANNED");
+        when(userStateRepository.findByName("BANNED")).thenReturn(Optional.of(bannedState));
+
+        // Mocking the ID fetch
+        List<Long> userIds = Arrays.asList(1L, 2L);
+        Page<Long> idPage = new PageImpl<>(userIds, pageable, 2);
+        when(userRepository.findUserIds(pageable)).thenReturn(idPage);
+
+        // Mocking the User entity retrieval
+        User user1 = createMockUser(1L, "Alice", "ACTIVE");
+        User user2 = createMockUser(2L, "Bob", "INACTIVE");
+        when(userRepository.findAllByIdWithRolesAndState(userIds)).thenReturn(Arrays.asList(user1, user2));
+        // Wait, the repository returns actual User objects:
+        when(userRepository.findAllByIdWithRolesAndState(userIds)).thenReturn(Arrays.asList(user1, user2));
+
+        // --- 2. Act ---
+        Page<ListUserResponse> result = userService.getAllUsers(pageable);
+
+        // --- 3. Assert ---
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+
+        // Verify Filter behavior
+        verify(session).disableFilter("deletedUserFilter");
+
+        // Verify Mapping
+        ListUserResponse firstUser = result.getContent().getFirst();
+        assertEquals("Alice", firstUser.getName());
+        assertTrue(firstUser.isActive());
+
+        ListUserResponse secondUser = result.getContent().get(1);
+        assertEquals("Bob", secondUser.getName());
+        assertFalse(secondUser.isActive());
+
+        assertEquals(2, result.getTotalElements());
+    }
+
+    @Test
+    void getAllUsers_WhenEmpty_ShouldReturnEmptyPage() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+        when(userRepository.findUserIds(pageable)).thenReturn(new PageImpl<>(Collections.emptyList()));
+
+        // Act
+        Page<ListUserResponse> result = userService.getAllUsers(pageable);
+
+        // Assert
+        assertTrue(result.getContent().isEmpty());
+        verify(userRepository, times(1)).findAllByIdWithRolesAndState(any());
+    }
+
+    // Helper to build a User entity with nested objects
+    private User createMockUser(Long id, String name, String stateName) {
+        User user = new User();
+        user.setId(id);
+        user.setName(name);
+        user.setEmail(name.toLowerCase() + "@example.com");
+
+        UserState state = new UserState();
+        state.setName(stateName);
+        user.setState(state);
+
+        Role role = new Role();
+        role.setName("ROLE_USER");
+        user.setRoles(Collections.singleton(role));
+
+        return user;
     }
 }
