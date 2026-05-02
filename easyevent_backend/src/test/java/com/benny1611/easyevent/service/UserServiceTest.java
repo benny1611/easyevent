@@ -63,6 +63,7 @@ class UserServiceTest {
     private CreateUserRequest validRequest;
     private User targetUser;
     private ChangeUserRequest request;
+    private AuthenticatedUser superAdminPrincipal;
 
     @BeforeEach
     void setUp() {
@@ -596,6 +597,130 @@ class UserServiceTest {
 
         // Act
         ListUserResponse response = userService.updateUserByAdmin(otherUser, 100L, request, null);
+
+        // Assert
+        assertNull(response);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should successfully update email and name when valid")
+    void updateBySuperAdmin_Success() throws IOException {
+        // Arrange
+        request.setName("New Name");
+        request.setEmail("new@test.com");
+        MultipartFile mockFile = mock(MultipartFile.class);
+        when(mockFile.isEmpty()).thenReturn(true);
+
+        UserState bannedState = new UserState();
+        bannedState.setName("BANNED");
+        when(userStateRepository.findByName("BANNED")).thenReturn(Optional.of(bannedState));
+
+        superAdminPrincipal = mock(AuthenticatedUser.class);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")))
+                .when(superAdminPrincipal).getAuthorities();
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        // changeMailAddress checks if the new email is already taken
+        when(userRepository.findByEmail("new@test.com")).thenReturn(Optional.empty());
+
+        // Act
+        ListUserResponse response = userService.updateUserBySuperAdmin(superAdminPrincipal, 100L, request, mockFile);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals("New Name", targetUser.getName());
+        assertEquals("new@test.com", targetUser.getEmail());
+        verify(userRepository).save(targetUser); // Verify save was triggered
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException if new email is already in use")
+    void updateBySuperAdmin_EmailConflict_ThrowsException() {
+        // Arrange
+        request.setEmail("taken@test.com");
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        // Simulate another user already having this email
+        when(userRepository.findByEmail("taken@test.com")).thenReturn(Optional.of(new User()));
+
+        superAdminPrincipal = mock(AuthenticatedUser.class);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")))
+                .when(superAdminPrincipal).getAuthorities();
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            userService.updateUserBySuperAdmin(superAdminPrincipal, 100L, request, null);
+        });
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should update profile picture and trigger save")
+    void updateBySuperAdmin_ProfilePic_Success() throws IOException {
+        // Arrange
+        MultipartFile mockFile = mock(MultipartFile.class);
+        when(mockFile.isEmpty()).thenReturn(false);
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+        when(profileImageService.saveAsPng(eq(mockFile), eq(100L))).thenReturn("/new-pic.png");
+
+        superAdminPrincipal = mock(AuthenticatedUser.class);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")))
+                .when(superAdminPrincipal).getAuthorities();
+
+        UserState bannedState = new UserState();
+        bannedState.setName("BANNED");
+        when(userStateRepository.findByName("BANNED")).thenReturn(Optional.of(bannedState));
+
+        // Act
+        ListUserResponse response = userService.updateUserBySuperAdmin(superAdminPrincipal, 100L, request, mockFile);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals("/new-pic.png", targetUser.getProfilePictureUrl());
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    @DisplayName("Should NOT call save if no data actually changed")
+    void updateBySuperAdmin_NoChanges_DoesNotSave() throws IOException {
+        // Arrange
+        request.setName("Old Name"); // Same as target
+        request.setEmail("target@test.com"); // Same as target
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+
+        UserState bannedState = new UserState();
+        bannedState.setName("BANNED");
+        when(userStateRepository.findByName("BANNED")).thenReturn(Optional.of(bannedState));
+
+        superAdminPrincipal = mock(AuthenticatedUser.class);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")))
+                .when(superAdminPrincipal).getAuthorities();
+
+        // Act
+        userService.updateUserBySuperAdmin(superAdminPrincipal, 100L, request, null);
+
+        // Assert
+        verify(userRepository, never()).save(any());
+        // findByEmail should never be called because the email didn't change from target@test.com
+        verify(userRepository, never()).findByEmail(anyString());
+    }
+
+    @Test
+    @DisplayName("Should return null if non-admin tries to call this method")
+    void updateBySuperAdmin_NotAuthorized_ReturnsNull() throws IOException {
+        // Arrange
+        AuthenticatedUser plebUser = mock(AuthenticatedUser.class);
+        when(plebUser.getUserId()).thenReturn(99L);
+        when(plebUser.getAuthorities()).thenReturn(List.of()); // No roles
+
+        when(userRepository.findByIdWithRolesAndState(100L)).thenReturn(Optional.of(targetUser));
+
+        // Act
+        ListUserResponse response = userService.updateUserBySuperAdmin(plebUser, 100L, request, null);
 
         // Assert
         assertNull(response);
