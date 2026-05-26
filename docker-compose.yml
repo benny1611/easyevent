@@ -1,0 +1,60 @@
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: spring-backend
+    ports:
+      - "${SSL_PORT}:${SSL_PORT}"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres-db:5432/${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - SSL_PORT=${SSL_PORT}
+      - SSL_KEYSTORE_PATH=file:cert/keystore.p12
+      - SSL_KEYSTORE_PASSWORD=${SSL_KEYSTORE_PASSWORD}
+    volumes:
+      - ./backend/cert:/app/cert:ro,Z
+      - ./backend/uploads:/app/uploads:rw,Z
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    ports:
+      - "443:443"
+    volumes:
+      - ${SSL_KEY_PATH}:/etc/nginx/certs/server.key:ro,Z
+      - ${SSL_CERT_PATH}:/etc/nginx/certs/server.crt:ro,Z
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
