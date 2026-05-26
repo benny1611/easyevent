@@ -1,4 +1,4 @@
-readme_content = """# template
+# template
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 [![Coverage](https://img.shields.io/badge/coverage-%3E85%25-green.svg)](#)
