@@ -18,19 +18,24 @@ This repository implements rigorous security standards, including automated acco
 * **Robust Authentication & Identity Provisioning**:
     * Native email/password authentication alongside social sign-in via **Google OAuth2** ("Continue with Google").
     * Secure stateless session management powered by cryptographically signed high-entropy **JWT tokens**.
-    * Automated automated account lockout safety mechanisms that block user access after $X$ consecutive failed password attempts.
+    * Automated account lockout safety mechanisms that block user access after $X$ consecutive failed password attempts.
     * Secure tokenized password reset flow integrating SMTP configurations.
 * **Hierarchical Role-Based Access Control (RBAC)**:
     * Strict tiered authorization architecture: `User`, `Admin`, and `Super-Admin`.
-    * Operational hierarchy control: Super-Admins possess operational authority to ban Admins; Admins possess authority to manage and ban standard Users.
+    * Operational hierarchy control: Super-Admins possess operational authority to ban/manage Admins; Admins possess authority to manage and ban standard Users.
+* **Advanced Account Lifecycle & Soft-Deletion**:
+    * Multi-tiered deletion privileges: Users can trigger the deletion of their own accounts, Admins can delete standard Users, and Super-Admins hold deletion rights over both Admins and Users.
+    * Temporal safety buffer: To preserve audit trails and prevent accidental data loss, accounts are initially **soft-deleted**. A background system permanently expunges the data only after a customizable threshold of $X$ days.
+    * Account Restoration Lifecycle: Soft-deleted accounts can be fully restored/reverted within the retention window by the user themselves or by authorized (Super)Admins.
+* **Proactive Event Notifications & Global Localization (i18n)**:
+    * Fully integrated multi-language translation architecture operational across both the React presentation layer and backend transactional messaging.
+    * Highly communicative, localized email notification system. The application keeps the user heavily informed by dispatching real-time, translated emails whenever sensitive account mutations occur (e.g., password resets, email modifications, account soft-deletions, or account restorations).
 * **End-to-End SSL/TLS Encryption**:
     * Zero-cleartext traffic rule. The edge reverse proxy (**Nginx**) handles incoming HTTPS traffic on port `443`.
     * Internal traffic is securely routed via HTTPS to the Spring Boot backend container operating a local **PKCS12 keystore** on port `8443`.
 * **Asset Management & Storage Persistence**:
     * Dynamic user profile picture provisioning and storage.
     * File storage layers mapped to isolated Docker volumes for high-availability data persistence.
-* **Global Localization (i18n)**:
-    * Fully integrated multi-language translation architecture operational across both the React presentation layer and backend exception/message interpolation context.
 * **Enterprise-Grade Containerization**:
     * Highly optimized, multi-stage Docker builds resulting in minimized attack surfaces.
     * Rootless security compliance: Backend services execute under a restricted non-root runtime environment (`spring:spring`).
@@ -57,3 +62,23 @@ This repository implements rigorous security standards, including automated acco
 The data layer models decoupled identity structures, token tables, audit parameters, and status indicators. Below is the Entity-Relationship Diagram (ERD) defining the schema constraints:
 
 ![ERD Diagram](https://github.com/benny1611/template/blob/main/backend/sql/user_diagram.jpg?raw=true)
+
+---
+
+## 📁 Repository Structure
+
+```text
+├── backend/
+│   ├── cert/                # Bound SSL Keystores and Certificates
+│   ├── uploads/             # Persistent profile asset folder
+│   ├── src/                 # Spring Boot application context
+│   ├── pom.xml              # Maven dependencies mapping
+│   └── Dockerfile           # Multi-stage non-root runtime build script
+├── frontend/
+│   ├── cert/                # Nginx TLS bindings
+│   ├── src/                 # React component structure & TypeScript assets
+│   ├── nginx.conf           # Production server context & routing definitions
+│   ├── vite.config.ts       # Build tools and developer runtime configs
+│   └── Dockerfile           # Node compilation & static asset distribution 
+├── .env.example             # Schema for runtime environmental variables
+└── docker-compose.yml       # Network orchestration schema
