@@ -20,13 +20,15 @@ This repository implements rigorous security standards, including automated acco
     * Secure stateless session management powered by cryptographically signed high-entropy **JWT tokens**.
     * Automated account lockout safety mechanisms that block user access after $X$ consecutive failed password attempts.
     * Secure tokenized password reset flow integrating SMTP configurations.
-* **Hierarchical Role-Based Access Control (RBAC)**:
+* **Hierarchical Role-Based Access Control (RBAC) & Immutable Auditing**:
     * Strict tiered authorization architecture: `User`, `Admin`, and `Super-Admin`.
     * Operational hierarchy control: Super-Admins possess operational authority to ban/manage Admins; Admins possess authority to manage and ban standard Users.
+    * **Comprehensive Audit Trail**: Fully accountable governance layer tracking destructive and administrative actions via dedicated ledger tables (`USER_BAN_LOG`, `USER_DELETION_LOG`, `USER_RECOVERY_LOG`). Every ban, deletion, and recovery operation meticulously logs the executing actor, the target entity, and the action timestamp.
+    * **Automated Log Pruning**: To prevent database bloat and comply with modern data-minimization regulations, log retention windows are bounded by a background cleaner that automatically purges historical entries after a customizable $X$-day threshold.
 * **Advanced Account Lifecycle & Soft-Deletion**:
     * Multi-tiered deletion privileges: Users can trigger the deletion of their own accounts, Admins can delete standard Users, and Super-Admins hold deletion rights over both Admins and Users.
-    * Temporal safety buffer: To preserve audit trails and prevent accidental data loss, accounts are initially **soft-deleted**. A background system permanently expunges the data only after a customizable threshold of $X$ days.
-    * Account Restoration Lifecycle: Soft-deleted accounts can be fully restored/reverted within the retention window by the user themselves or by authorized (Super)Admins.
+    * Temporal safety buffer: To preserve immediate audit capabilities and prevent catastrophic accidental data loss, accounts are initially **soft-deleted**. The background daemon permanently expunges the underlying record only after a customizable threshold of $X$ days.
+    * Account Restoration Lifecycle: Soft-deleted accounts can be fully restored/reverted within the retention window by the user themselves or by authorized (Super)Admins, with the entire operational recovery sequence fully audited.
 * **Proactive Event Notifications & Global Localization (i18n)**:
     * Fully integrated multi-language translation architecture operational across both the React presentation layer and backend transactional messaging.
     * Highly communicative, localized email notification system. The application keeps the user heavily informed by dispatching real-time, translated emails whenever sensitive account mutations occur (e.g., password resets, email modifications, account soft-deletions, or account restorations).
@@ -40,7 +42,7 @@ This repository implements rigorous security standards, including automated acco
     * Highly optimized, multi-stage Docker builds resulting in minimized attack surfaces.
     * Rootless security compliance: Backend services execute under a restricted non-root runtime environment (`spring:spring`).
     * SELinux capability alignment using local volume flags (`:Z`, `:ro`, `:rw`).
-
+	
 ---
 
 ## 🛠️ Technology Stack
