@@ -84,3 +84,94 @@ The data layer models decoupled identity structures, token tables, audit paramet
 │   └── Dockerfile           # Node compilation & static asset distribution 
 ├── .env.example             # Schema for runtime environmental variables
 └── docker-compose.yml       # Network orchestration schema
+```
+## ⚙️ Initial Setup & Provisioning
+1. Cryptographic Certificate Generation
+Because the system runs strictly over TLS, you must generate a local self-signed certificate and a Java Keystore (PKCS12 format) before booting the application. Execute the following commands within your terminal layout:
+
+```bash
+# Create the target directory
+mkdir -p backend/cert
+
+# 1. Generate standard RSA private key and self-signed certificate for Nginx
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout ./backend/cert/server.key \
+  -out ./backend/cert/server.crt \
+  -subj "/CN=localhost"
+
+# 2. Package the certificates into a PKCS12 keystore format for the Spring Boot application
+openssl pkcs12 -export \
+  -in ./backend/cert/server.crt \
+  -inkey ./backend/cert/server.key \
+  -out ./backend/cert/keystore.p12 \
+  -name springboot \
+  -password pass:your_keystore_password
+```
+
+2. Environment Configuration
+Duplicate the configuration boilerplate layout into an operational .env file at the repository root:
+```bash
+cp .env.example .env
+```
+
+Open ```.env``` and configure your credentials accurately:
+
+* Ensure ```SSL_KEYSTORE_PASSWORD``` matches the password specified during the OpenSSL conversion above (```your_keystore_password```).
+* Provision your explicit ```GOOGLE_CLIENT_ID``` and ```GOOGLE_CLIENT_SECRET``` via the Google Cloud Developer Console to enable external authentication.
+* Populate the ```MAIL_USERNAME``` and ```MAIL_PASSWORD``` parameters with your Mailtrap sandbox inbox credentials to support the registration/reset/lifecycle messaging routines.
+
+## 🐳 Container Orchestration (```docker-compose```)
+To spin up the entire encrypted application environment locally in production/staging simulation mode, run:
+```bash
+docker-compose up --build
+```
+
+Infrastructure Startup Sequence:
+1. ```postgres-db``` provisions its environment using the defined ```.env``` parameters. A strict health check execution (```pg_isready```) routinely analyzes its availability.
+
+2. ```backend``` triggers compilation upon confirmation of a healthy database status, processing database version schemas via Flyway migrations instantly.
+
+3. ```frontend``` boots an Nginx layout binding local TLS paths directly into its routing server blocks.
+
+Operational Endpoints:
+* Web Application Interface (UI): ```https://localhost``` (Port ```443```)
+* API Engine Access: ```https://localhost:8443```
+* Database Interface Connection: ```localhost:5432```
+
+## 💻 Local Development Workflow
+When running active development feedback loops without complete containerization steps, services can be run individually:
+
+Backend Development Context
+Ensure you have a local PostgreSQL engine running or utilize ```docker-compose up postgres-db``` to provide the data layer.
+
+```bash
+cd backend
+# Set your environmental variables within your shell or IDE environment profile
+./mvnw spring-boot:run
+```
+
+Frontend Development Context
+The development environment layout features dynamic certificate allocation via the ```basicSsl``` plugin configuration within Vite.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+* The system intercepts the compiler invocation context (```command === 'serve'```), auto-injecting developer-centric certificates dynamically.
+* Local Dev Interface access endpoint: ```https://localhost:5173```
+
+## 🧪 Quality Assurance & Test Suites
+Quality vectors are explicitly monitored via continuous validation structures. The backend microservice layer adheres strictly to a target framework criteria specifying greater than 85% test coverage.
+
+To execute the unit and integration testing lifecycle suites against mocks and context slices, type:
+```bash
+cd backend
+./mvnw test
+```
+
+## 📝 Engineering Note & Transparency
+This boilerplate repository leverages cutting-edge software development lifecycles. Parts of the initial architecture boilerplate structures and scaffolding implementations were optimized utilizing generative artificial intelligence frameworks. Following automated code scaffolding phases, 100% of the files, type declarations, security mappings, and configurations have been manually audited, corrected, and hand-reviewed by human maintainers to guarantee absolute precision, safety, and performance.
+
+## 📄 License
+This architecture framework template is open-source software licensed under the MIT License. Feel free to adapt, fork, and use it commercially for your independent applications.
