@@ -56,4 +56,4 @@ This repository implements rigorous security standards, including automated acco
 
 The data layer models decoupled identity structures, token tables, audit parameters, and status indicators. Below is the Entity-Relationship Diagram (ERD) defining the schema constraints:
 
-![ERD Diagram](https://github.com/benny1611/template/blob/main/backend/sql/user_diagram.png?raw=true)
+![ERD Diagram](https://github.com/benny1611/template/blob/main/backend/sql/user_diagram.jpg?raw=true)
